@@ -85,7 +85,7 @@ body{background:#0e1117;color:#e8edf5;font-family:'DM Sans',sans-serif;font-size
     <button class="back-btn" onclick="goHome()">← Menu</button>
     <div><div class="app-title">📋 Atendimentos do Dia</div><div class="app-sub" id="atend-data-sub"></div></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:auto;" id="atend-stats-bar"></div>
-    <button class="sync-btn" onclick="atLoadFromSheets()"><span id="at-sync-icon">↻</span> Sincronizar</button>
+    <button class="sync-btn" onclick="atFecharDia()"><span id="at-sync-icon">↻</span> Fechar Dia</button>
   </div>
   <div class="app-body" id="atend-body"></div>
 </div>
@@ -168,6 +168,16 @@ function openApp(id) {
   if (id === 'atend') initAtend();
   if (id === 'contab') initContab();
 }
+
+// Auto-sync a cada 60 segundos quando o app estiver aberto
+setInterval(() => {
+  const filaAtivo = document.getElementById('app-fila')?.classList.contains('active');
+  const atendAtivo = document.getElementById('app-atend')?.classList.contains('active');
+  const contabAtivo = document.getElementById('app-contab')?.classList.contains('active');
+  if (filaAtivo && fcInited) fcLoadFromSheets();
+  if (atendAtivo && atendInited) atLoadFromSheets();
+  if (contabAtivo && contabInited) cbLoadFromSheets();
+}, 60000);
 function goHome() {
   document.querySelectorAll('.app').forEach(a => a.classList.remove('active'));
   document.getElementById('launcher').classList.remove('hidden');
@@ -334,7 +344,7 @@ async function fcDeleteFromSheets(id) {
 }
 
 function initFila() {
-  if (fcInited) { fcRender(); return; }
+  if (fcInited) { fcLoadFromSheets(); return; }
   fcInited = true;
   document.getElementById('fc-body').innerHTML = FC_STYLES + `
     <div class="fc-tabs">
@@ -692,8 +702,7 @@ async function atLoadFromSheets(){
   syncStart('at-sync-icon');
   try {
     const res=await apiGet('atendimentos');if(res.error)throw new Error(res.error);
-    const today=atToday();
-    atendList=(res.rows||[]).filter(r=>r.data===today).map(r=>({
+    atendList=(res.rows||[]).filter(r=>r.data===atDataAtual).map(r=>({
       id:r.id, data:r.data, nome:r.nome||'', tipo:r.tipo||'',
       consulta_valor:parseFloat(r.consulta_valor)||700,
       consulta_nf:r.consulta_nf==='TRUE'||r.consulta_nf===true||r.consulta_nf==='true',
@@ -712,7 +721,7 @@ async function atSaveToSheets(a){
 }
 
 function initAtend(){
-  if(atendInited){atRenderAll();return;} atendInited=true;
+  if(atendInited){ atLoadFromSheets(); return; } atendInited=true;
   const now=new Date();
   document.getElementById('atend-data-sub').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   document.getElementById('atend-body').innerHTML=`<style>
@@ -829,8 +838,179 @@ function atUpdProc(id,pi,field,val){const a=atGet(id);if(!a||!a.procs[pi])return
 function atDelProc(id,pi){const a=atGet(id);if(!a)return;a.procs.splice(pi,1);atRenderAll();}
 async function atDel(id){const a=atGet(id);atendList=atendList.filter(x=>x.id!==id);atRenderAll();if(a?.id&&!a.id.startsWith('local-'))await apiDelete('atendimentos',a.id);}
 function atEditar(id){const a=atGet(id);if(!a)return;a.salvo=false;atRenderAll();}
-async function atSalvar(id){const a=atGet(id);if(!a)return;a.salvo=true;a.data=atToday();atRenderAll();await atSaveToSheets(a);showToast('💾 Atendimento salvo!');}
-function atAddPaciente(){const id='local-'+Date.now();atendList.push({id,data:atToday(),nome:'',tipo:'',consulta_valor:700,consulta_nf:true,pgto:{modo:'',tipo1:'',tipo2:'',parcelas1:1,parcelas2:1,valor1:0,valor2:0},procs:[],salvo:false});atRenderAll();}
+async function atFecharDia(){
+  if(!atendList.length){
+    showToast('Nenhum atendimento para fechar.', true);
+    return;
+  }
+  // Confirma fechamento
+  const dt = new Date(atDataAtual+'T12:00:00');
+  const dataFormatada = dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const total = atendList.reduce((s,a)=>s+atCalcTotal(a),0);
+  if(!confirm(`Fechar o dia ${dataFormatada}?\n\n${atendList.length} paciente(s) · ${atFmt(total)}\n\nUm relatório PDF será gerado automaticamente.`)) return;
+  // Sincroniza primeiro
+  await atLoadFromSheets();
+  // Gera PDF
+  atGerarPDFFechamento();
+  showToast('✅ Dia fechado! PDF gerado.');
+}
+
+function atGerarPDFFechamento(){
+  if(!atendList.length) return;
+  const dt = new Date(atDataAtual+'T12:00:00');
+  const dataStr = dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const totalGeral = atendList.reduce((s,a)=>s+atCalcTotal(a),0);
+  const tiposLabel = {primeira:'Primeira Consulta',nova:'Nova Consulta',retorno:'Retorno'};
+  const pgtoLabels = {dinheiro:'💵 Dinheiro',pix:'📲 Pix',credito:'💳 Crédito',debito:'💳 Débito',cheque:'📄 Cheque'};
+
+  // Agrupamentos
+  const porTipo = {primeira:0,nova:0,retorno:0};
+  const procCount = {};
+  const pgtoCount = {};
+  atendList.forEach(a=>{
+    if(porTipo[a.tipo]!==undefined) porTipo[a.tipo]++;
+    a.procs.forEach(p=>{
+      const inf=ATEND_PROCS.find(pr=>pr.id===p.tipo);
+      const lbl=inf?inf.label:p.tipo;
+      if(!procCount[lbl]) procCount[lbl]={qtd:0,total:0};
+      procCount[lbl].qtd++;
+      procCount[lbl].total+=p.valor||0;
+    });
+    const m=a.pgto.modo;
+    if(m&&m!=='duas'){pgtoCount[m]=(pgtoCount[m]||0)+1;}
+    if(m==='duas'){
+      if(a.pgto.tipo1)pgtoCount[a.pgto.tipo1]=(pgtoCount[a.pgto.tipo1]||0)+1;
+      if(a.pgto.tipo2)pgtoCount[a.pgto.tipo2]=(pgtoCount[a.pgto.tipo2]||0)+1;
+    }
+  });
+
+  const linhasPacientes = atendList.map((a,i)=>{
+    const ps=a.procs.length?(a.procs.map(p=>{const inf=ATEND_PROCS.find(pr=>pr.id===p.tipo);return inf?inf.label:'?';}).join(', ')):'Apenas consulta';
+    return `<tr style="background:${i%2===0?'#fff':'#f7faf8'}">
+      <td style="padding:6px 10px;font-size:12px;font-weight:600">${a.nome||'—'}</td>
+      <td style="padding:6px 10px;font-size:12px;color:#666">${tiposLabel[a.tipo]||'—'}</td>
+      <td style="padding:6px 10px;font-size:12px;color:#666">${ps}</td>
+      <td style="padding:6px 10px;font-size:12px;color:#666">${atPgtoLabel(a)}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:700;color:#496750;font-size:13px">${atFmt(atCalcTotal(a))}</td>
+    </tr>`;
+  }).join('');
+
+  const linhasProcs = Object.entries(procCount).map(([l,v])=>
+    `<tr><td style="padding:5px 10px;font-size:12px">${l}</td><td style="padding:5px 10px;text-align:center;font-size:12px">${v.qtd}x</td><td style="padding:5px 10px;text-align:right;font-weight:600;color:#496750;font-size:12px">${atFmt(v.total)}</td></tr>`
+  ).join('');
+
+  const linhasPgto = Object.entries(pgtoCount).filter(([,v])=>v>0).map(([k,v])=>
+    `<tr><td style="padding:4px 10px;font-size:12px">${pgtoLabels[k]||k}</td><td style="padding:4px 10px;text-align:center;font-size:12px;color:#666">${v} atend.</td></tr>`
+  ).join('');
+
+  const agora = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <title>Fechamento — ${dataStr}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Calibri,Arial,sans-serif;background:#fff;color:#222;padding:32px 40px;max-width:740px;margin:0 auto;}
+    .hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px;}
+    .cv{font-size:26px;color:#496750;font-weight:900;letter-spacing:-4px;}
+    .hdr-right{text-align:right;font-size:11px;color:#888;line-height:1.9;}
+    .fechamento-badge{display:inline-block;background:#496750;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:4px;}
+    .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+    .kpi{background:#f7faf8;border:1.5px solid #DBE7DC;border-radius:10px;padding:12px 14px;}
+    .kpi.destaque{background:#496750;border-color:#496750;}
+    .kpi-l{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5B9776;font-weight:700;margin-bottom:5px;}
+    .kpi.destaque .kpi-l{color:rgba(255,255,255,.75);}
+    .kpi-v{font-size:18px;font-weight:700;color:#496750;}
+    .kpi.destaque .kpi-v{color:#fff;font-size:20px;}
+    h3{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B9776;margin:18px 0 8px;padding-bottom:5px;border-bottom:1.5px solid #DBE7DC;}
+    table{width:100%;border-collapse:collapse;border:1px solid #eee;border-radius:8px;overflow:hidden;}
+    th{background:#f0f5f1;padding:7px 10px;font-size:10px;text-align:left;color:#496750;text-transform:uppercase;letter-spacing:.5px;}
+    .resumo-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;}
+    .resumo-box{background:#f7faf8;border:1px solid #DBE7DC;border-radius:8px;padding:12px 14px;}
+    .resumo-box h4{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#5B9776;font-weight:700;margin-bottom:8px;}
+    .total-banner{background:#496750;border-radius:10px;padding:16px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:20px 0 16px;}
+    .total-label{font-size:12px;opacity:.8;}
+    .total-val{font-size:26px;font-weight:700;}
+    .assinatura{margin-top:28px;border-top:1.5px solid #DBE7DC;padding-top:16px;display:flex;justify-content:space-between;align-items:flex-end;}
+    .ass-linha{border-top:1px solid #333;width:200px;text-align:center;padding-top:6px;font-size:11px;color:#666;}
+    .ftr{margin-top:16px;display:flex;justify-content:space-between;font-size:10px;color:#aaa;}
+    .bp{display:block;margin:16px auto 0;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:sans-serif;}
+    @media print{.bp{display:none}body{padding:16px 20px}}
+  </style></head><body>
+
+  <div class="hdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="cv">>></span>
+      <div>
+        <div style="font-size:17px;font-weight:700;color:#496750">Dr. Marcelo Tostes</div>
+        <div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase">Ortopedia · Cirurgia do Joelho / Esporte</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <div class="fechamento-badge">✅ Fechamento do Dia</div><br>
+      <strong>${dataStr}</strong><br>
+      Emitido às ${agora} · CRM-SP 120.317
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi destaque"><div class="kpi-l">Faturamento Total</div><div class="kpi-v">${atFmt(totalGeral)}</div></div>
+    <div class="kpi"><div class="kpi-l">Pacientes</div><div class="kpi-v" style="color:#5b8fe8">${atendList.length}</div></div>
+    <div class="kpi"><div class="kpi-l">Ticket Médio</div><div class="kpi-v">${atFmt(atendList.length?totalGeral/atendList.length:0)}</div></div>
+    <div class="kpi"><div class="kpi-l">Procedimentos</div><div class="kpi-v" style="color:#e8973a">${Object.values(procCount).reduce((s,v)=>s+v.qtd,0)}</div></div>
+  </div>
+
+  <div class="resumo-grid">
+    <div class="resumo-box">
+      <h4>Tipos de Consulta</h4>
+      <table><tbody>
+        ${porTipo.primeira>0?`<tr><td style="padding:4px 8px;font-size:12px">🆕 Primeira Consulta</td><td style="padding:4px 8px;text-align:right;font-weight:700">${porTipo.primeira}</td></tr>`:''}
+        ${porTipo.nova>0?`<tr><td style="padding:4px 8px;font-size:12px">📋 Nova Consulta</td><td style="padding:4px 8px;text-align:right;font-weight:700">${porTipo.nova}</td></tr>`:''}
+        ${porTipo.retorno>0?`<tr><td style="padding:4px 8px;font-size:12px">🔄 Retorno</td><td style="padding:4px 8px;text-align:right;font-weight:700">${porTipo.retorno}</td></tr>`:''}
+      </tbody></table>
+    </div>
+    <div class="resumo-box">
+      <h4>Formas de Pagamento</h4>
+      <table><tbody>${linhasPgto||'<tr><td style="padding:4px 8px;font-size:12px;color:#999">Não informado</td></tr>'}</tbody></table>
+    </div>
+  </div>
+
+  ${linhasProcs?`<h3>Procedimentos Realizados</h3>
+  <table><thead><tr><th>Procedimento</th><th style="text-align:center">Qtd</th><th style="text-align:right">Total</th></tr></thead>
+  <tbody>${linhasProcs}</tbody></table>`:''}
+
+  <h3>Atendimentos do Dia</h3>
+  <table>
+    <thead><tr><th>Paciente</th><th>Tipo</th><th>Procedimentos</th><th>Pagamento</th><th style="text-align:right">Valor</th></tr></thead>
+    <tbody>${linhasPacientes}</tbody>
+    <tfoot><tr style="background:#f0f5f1">
+      <td colspan="4" style="padding:8px 10px;font-weight:700;font-size:13px">TOTAL DO DIA</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;font-size:15px;color:#496750">${atFmt(totalGeral)}</td>
+    </tr></tfoot>
+  </table>
+
+  <div class="assinatura">
+    <div></div>
+    <div class="ass-linha">Dr. Marcelo Tostes · CRM-SP 120.317</div>
+  </div>
+
+  <button class="bp" onclick="window.print()">🖨️ Salvar como PDF (Cmd+P)</button>
+
+  <div class="ftr">
+    <span>www.drmarcelotostes.com · Ribeirão Preto / São Paulo</span>
+    <span>Documento interno · ${dataStr}</span>
+  </div>
+  </body></html>`;
+
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='fechamento_'+atDataAtual+'.html';
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}const a=atGet(id);if(!a)return;a.salvo=true;a.data=atDataAtual;atRenderAll();await atSaveToSheets(a);showToast('💾 Atendimento salvo!');}
+function atAddPaciente(){const id='local-'+Date.now();atendList.push({id,data:atDataAtual,nome:'',tipo:'',consulta_valor:700,consulta_nf:true,pgto:{modo:'',tipo1:'',tipo2:'',parcelas1:1,parcelas2:1,valor1:0,valor2:0},procs:[],salvo:false});atRenderAll();}
 function atUpdStats(){const bar=document.getElementById('atend-stats-bar');if(!bar)return;const n=atendList.length,total=atendList.reduce((s,a)=>s+atCalcTotal(a),0);bar.innerHTML=n?`<div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"><span style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1">${n}</span><span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Pac.</span></div><div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"><span style="font-size:14px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1">${atFmt(total)}</span><span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total</span></div>`:'';}
 
 function atShowResumo(){
