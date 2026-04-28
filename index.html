@@ -83,9 +83,9 @@ body{background:#0e1117;color:#e8edf5;font-family:'DM Sans',sans-serif;font-size
 <div id="app-atend" class="app">
   <div class="app-bar">
     <button class="back-btn" onclick="goHome()">← Menu</button>
-    <div><div class="app-title">📋 Atendimentos do Dia</div><div class="app-sub" id="atend-data-sub"></div></div>
+    <div><div class="app-title">📋 Atendimentos</div><div class="app-sub" id="atend-data-sub"></div></div>
     <div style="display:flex;gap:8px;align-items:center;margin-left:auto;" id="atend-stats-bar"></div>
-    <button class="sync-btn" onclick="atLoadFromSheets()"><span id="at-sync-icon">↻</span> Sincronizar</button>
+    <button class="sync-btn" onclick="atFecharDia()" style="background:rgba(73,103,80,.2);border-color:#5B9776;color:#81BBA1;font-weight:600;">✅ Fechar Dia</button>
   </div>
   <div class="app-body" id="atend-body"></div>
 </div>
@@ -105,113 +105,63 @@ body{background:#0e1117;color:#e8edf5;font-family:'DM Sans',sans-serif;font-size
 </div>
 
 <script>
-// ══════════════════════════════════════
-// CONFIG — URL do Google Apps Script
-// ══════════════════════════════════════
 const API_URL = 'https://script.google.com/macros/s/AKfycbwFbTpOmNtlf_pgN7Cq3OE7CMD5Jo6vmkPkNa3F773EQFIqX_BHuqAC15zgrl6akcAd/exec';
 
-// ── API helpers ──
-async function apiGet(sheet) {
-  const url = `${API_URL}?action=getAll&sheet=${sheet}&cb=${Date.now()}`;
-  const r = await fetch(url);
-  return r.json();
-}
-async function apiSave(sheet, row) {
-  const r = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'save', sheet, row })
-  });
-  return r.json();
-}
-async function apiDelete(sheet, id) {
-  const r = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'delete', sheet, id })
-  });
-  return r.json();
-}
-async function apiDeleteDay(data) {
-  const r = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action: 'deleteDay', data })
-  });
-  return r.json();
-}
+async function apiGet(sheet){const r=await fetch(`${API_URL}?action=getAll&sheet=${sheet}&cb=${Date.now()}`);return r.json();}
+async function apiSave(sheet,row){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'save',sheet,row})});return r.json();}
+async function apiDelete(sheet,id){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'delete',sheet,id})});return r.json();}
+async function apiDeleteDay(data){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'deleteDay',data})});return r.json();}
 
-function showToast(msg, err=false) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show' + (err ? ' err' : '');
-  clearTimeout(t._to);
-  t._to = setTimeout(() => t.className = '', 3000);
-}
-function syncStart(iconId) {
-  const el = document.getElementById(iconId);
-  if (el) el.className = 'spin';
-  document.getElementById('sync-bar').classList.add('active');
-}
-function syncEnd(iconId) {
-  const el = document.getElementById(iconId);
-  if (el) el.className = '';
-  document.getElementById('sync-bar').classList.remove('active');
-}
+function showToast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.className='show'+(err?' err':'');clearTimeout(t._to);t._to=setTimeout(()=>t.className='',3000);}
+function syncStart(id){const el=document.getElementById(id);if(el)el.className='spin';document.getElementById('sync-bar').classList.add('active');}
+function syncEnd(id){const el=document.getElementById(id);if(el)el.className='';document.getElementById('sync-bar').classList.remove('active');}
 
-// ══════════════════════════════════════
-// LAUNCHER
-// ══════════════════════════════════════
-function openApp(id) {
+// ── LAUNCHER ──
+function openApp(id){
   document.getElementById('launcher').classList.add('hidden');
-  document.querySelectorAll('.app').forEach(a => a.classList.remove('active'));
-  document.getElementById('app-' + id).classList.add('active');
-  if (id === 'fila') initFila();
-  if (id === 'calc') initCalc();
-  if (id === 'atend') initAtend();
-  if (id === 'contab') initContab();
+  document.querySelectorAll('.app').forEach(a=>a.classList.remove('active'));
+  document.getElementById('app-'+id).classList.add('active');
+  if(id==='fila')initFila();
+  if(id==='calc')initCalc();
+  if(id==='atend')initAtend();
+  if(id==='contab')initContab();
 }
-
-// Auto-sync a cada 60 segundos quando o app estiver aberto
-setInterval(() => {
-  const filaAtivo = document.getElementById('app-fila')?.classList.contains('active');
-  const atendAtivo = document.getElementById('app-atend')?.classList.contains('active');
-  const contabAtivo = document.getElementById('app-contab')?.classList.contains('active');
-  if (filaAtivo && fcInited) fcLoadFromSheets();
-  if (atendAtivo && atendInited) atLoadFromSheets();
-  if (contabAtivo && contabInited) cbLoadFromSheets();
-}, 60000);
-function goHome() {
-  document.querySelectorAll('.app').forEach(a => a.classList.remove('active'));
+function goHome(){
+  document.querySelectorAll('.app').forEach(a=>a.classList.remove('active'));
   document.getElementById('launcher').classList.remove('hidden');
 }
 
-// ══════════════════════════════════════
-// UTILITÁRIOS
-// ══════════════════════════════════════
-const TODAY = new Date(); TODAY.setHours(0,0,0,0);
-const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const fmtR = v => v ? 'R$ ' + Number(v).toLocaleString('pt-BR') : '—';
-const daysTo = ds => { if (!ds) return null; return Math.round((new Date(ds+'T00:00:00') - TODAY) / 864e5); };
-const dlClass = d => { if (d===null) return 'none'; if (d<0) return 'expired'; if (d<=2) return 'critical'; if (d<=7) return 'warning'; return 'safe'; };
-const dlLabel = d => { if (d===null) return null; if (d<0) return '⚠ VENCIDA há '+Math.abs(d)+'d'; if (d===0) return '🚨 VENCE HOJE'; if (d===1) return '🔴 AMANHÃ'; return '📅 '+d+' dias'; };
-const sClass = s => { s=(s||'').toUpperCase(); if(s.includes('AUTORIZADO')&&!s.includes('AINDA'))return'autorizado'; if(s.includes('EM AUTORIZA'))return'em-autorizacao'; if(s.includes('AINDA NÃO')||s.includes('AGUARDA'))return'nao-solicitado'; if(s.includes('NÃO NECESSITA'))return'nao-necessita'; return'vazio'; };
-const sLabel = s => { s=(s||'').toUpperCase(); if(s.includes('AUTORIZADO')&&!s.includes('AINDA'))return'Autorizado'; if(s.includes('EM AUTORIZA'))return'Em Autorização'; if(s.includes('AINDA NÃO')||s.includes('AGUARDA'))return'Não Solicitado'; if(s.includes('NÃO NECESSITA'))return'Não Necessita'; return s||'—'; };
-const isOk = v => ['ENTREGUE','ORIENTADO','PEDIDO ENTREGUE','PACIENTE JÁ FEZ'].includes((v||'').toUpperCase());
-const isNA = v => (v||'').toUpperCase() === 'NÃO SE APLICA';
-const fci = v => { if(isNA(v))return{c:'warn',i:'—'}; if(isOk(v))return{c:'ok',i:'✓'}; return{c:'fail',i:'✗'}; };
-const score = p => { const it=[p.sabao,p.exames,p.orient,p.anest,p.cardio,p.bactroban]; const ap=it.filter(v=>!isNA(v)); return{done:ap.filter(isOk).length,total:ap.length}; };
-const SEL_STATUS = ['AUTORIZADO','EM AUTORIZAÇÃO','AINDA NÃO SOLICITADO','NÃO NECESSITA',''];
-const SEL_CHK = ['ENTREGUE','PEDIDO ENTREGUE','PACIENTE JÁ FEZ','ORIENTADO','NÃO ENTREGUE','NÃO ORIENTADO','FALTA ENTREGAR','FALTA SOLICITAR','SOLICITADO','NÃO SE APLICA','VAZIO'];
-const selOpts = (opts,cur) => opts.map(o=>`<option value="${esc(o)}"${(o||'').toUpperCase()===(cur||'').toUpperCase()?'selected':''}>${o||'— sem status —'}</option>`).join('');
+// Auto-sync 60s — apenas Fila e Contabilidade
+setInterval(()=>{
+  if(document.getElementById('app-fila')?.classList.contains('active')&&fcInited)fcLoadFromSheets();
+  if(document.getElementById('app-contab')?.classList.contains('active')&&contabInited)cbLoadFromSheets();
+},60000);
+
+// ── UTILS ──
+const TODAY=new Date();TODAY.setHours(0,0,0,0);
+const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const fmtR=v=>v?'R$ '+Number(v).toLocaleString('pt-BR'):'—';
+const daysTo=ds=>{if(!ds)return null;return Math.round((new Date(ds+'T00:00:00')-TODAY)/864e5);};
+const dlClass=d=>{if(d===null)return'none';if(d<0)return'expired';if(d<=2)return'critical';if(d<=7)return'warning';return'safe';};
+const dlLabel=d=>{if(d===null)return null;if(d<0)return'⚠ VENCIDA há '+Math.abs(d)+'d';if(d===0)return'🚨 VENCE HOJE';if(d===1)return'🔴 AMANHÃ';return'📅 '+d+' dias';};
+const sClass=s=>{s=(s||'').toUpperCase();if(s.includes('AUTORIZADO')&&!s.includes('AINDA'))return'autorizado';if(s.includes('EM AUTORIZA'))return'em-autorizacao';if(s.includes('AINDA NÃO')||s.includes('AGUARDA'))return'nao-solicitado';if(s.includes('NÃO NECESSITA'))return'nao-necessita';return'vazio';};
+const sLabel=s=>{s=(s||'').toUpperCase();if(s.includes('AUTORIZADO')&&!s.includes('AINDA'))return'Autorizado';if(s.includes('EM AUTORIZA'))return'Em Autorização';if(s.includes('AINDA NÃO')||s.includes('AGUARDA'))return'Não Solicitado';if(s.includes('NÃO NECESSITA'))return'Não Necessita';return s||'—';};
+const isOk=v=>['ENTREGUE','ORIENTADO','PEDIDO ENTREGUE','PACIENTE JÁ FEZ'].includes((v||'').toUpperCase());
+const isNA=v=>(v||'').toUpperCase()==='NÃO SE APLICA';
+const fci=v=>{if(isNA(v))return{c:'warn',i:'—'};if(isOk(v))return{c:'ok',i:'✓'};return{c:'fail',i:'✗'};};
+const score=p=>{const it=[p.sabao,p.exames,p.orient,p.anest,p.cardio,p.bactroban];const ap=it.filter(v=>!isNA(v));return{done:ap.filter(isOk).length,total:ap.length};};
+const SEL_STATUS=['AUTORIZADO','EM AUTORIZAÇÃO','AINDA NÃO SOLICITADO','NÃO NECESSITA',''];
+const SEL_CHK=['ENTREGUE','PEDIDO ENTREGUE','PACIENTE JÁ FEZ','ORIENTADO','NÃO ENTREGUE','NÃO ORIENTADO','FALTA ENTREGAR','FALTA SOLICITAR','SOLICITADO','NÃO SE APLICA','VAZIO'];
+const selOpts=(opts,cur)=>opts.map(o=>`<option value="${esc(o)}"${(o||'').toUpperCase()===(cur||'').toUpperCase()?'selected':''}>${o||'— sem status —'}</option>`).join('');
 
 // ══════════════════════════════════════
 // FILA CIRÚRGICA
 // ══════════════════════════════════════
-let DB = { ativas: [], futuras: [] };
-let fcTab = 'ativas';
-const fcOpen = new Set(), fcEdit = new Set();
-let fcInited = false;
+let DB={ativas:[],futuras:[]},fcTab='ativas';
+const fcOpen=new Set(),fcEdit=new Set();
+let fcInited=false;
 
-const FC_STYLES = `
-<style>
+const FC_CSS=`<style>
 .fc-tabs{display:flex;gap:4px;padding:0 20px;background:#161b25;border-bottom:1px solid #2a3347;}
 .fc-tab{padding:9px 16px;background:none;border:none;color:#8b94a8;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;position:relative;}
 .fc-tab.active{color:#81BBA1;border-bottom-color:#81BBA1;}
@@ -221,57 +171,37 @@ const FC_STYLES = `
 .fc-ctrl input,.fc-ctrl select{background:#1e2535;border:1px solid #2a3347;color:#e8edf5;border-radius:8px;padding:7px 11px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
 #fc-search{width:220px;}
 .fc-btn-new{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;background:#496750;color:#DBE7DC;font-weight:500;}
-.fc-main{padding:16px 20px;}
-.fc-grid{display:flex;flex-direction:column;gap:8px;}
+.fc-main{padding:16px 20px;}.fc-grid{display:flex;flex-direction:column;gap:8px;}
 .fcard{background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden;transition:border-color .2s;}
-.fcard:hover{border-color:#3a4a63;}
-.fcard.editing{border-color:#5B9776;}
-.fcard.ce{border-left:3px solid #e05252;}
-.fcard.cc{border-left:3px solid #f0883e;}
-.fcard.cw{border-left:3px solid #e8b84b;}
+.fcard:hover{border-color:#3a4a63;}.fcard.editing{border-color:#5B9776;}
+.fcard.ce{border-left:3px solid #e05252;}.fcard.cc{border-left:3px solid #f0883e;}.fcard.cw{border-left:3px solid #e8b84b;}
 .fhdr{display:grid;grid-template-columns:auto 1fr 1.1fr 0.8fr 0.8fr 0.6fr 18px;gap:10px;padding:12px 16px;align-items:center;cursor:pointer;user-select:none;}
 .stars-col{display:flex;flex-direction:column;gap:1px;align-items:center;}
-.star{font-size:15px;line-height:1;cursor:pointer;transition:transform .1s;}
-.star:hover{transform:scale(1.25);}
-.pname{font-weight:600;font-size:13px;}
-.surg{font-size:11px;color:#8b94a8;margin-top:2px;}
+.star{font-size:15px;line-height:1;cursor:pointer;transition:transform .1s;}.star:hover{transform:scale(1.25);}
+.pname{font-weight:600;font-size:13px;}.surg{font-size:11px;color:#8b94a8;margin-top:2px;}
 .lmb-inline{margin-top:3px;font-size:11px;color:#e8b84b;background:rgba(232,184,75,.08);border:1px solid rgba(232,184,75,.18);border-radius:5px;padding:2px 7px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .bdg{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid transparent;white-space:nowrap;}
 .bdg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
-.bdg.autorizado{background:rgba(129,187,161,.1);border-color:#81BBA1;color:#81BBA1;}
-.bdg.autorizado .bdg-dot{background:#81BBA1;}
-.bdg.em-autorizacao{background:rgba(232,184,75,.1);border-color:#e8b84b;color:#e8b84b;}
-.bdg.em-autorizacao .bdg-dot{background:#e8b84b;}
-.bdg.nao-solicitado{background:rgba(155,125,234,.1);border-color:#9b7dea;color:#9b7dea;}
-.bdg.nao-solicitado .bdg-dot{background:#9b7dea;}
-.bdg.nao-necessita{background:rgba(91,143,232,.1);border-color:#5b8fe8;color:#5b8fe8;}
-.bdg.nao-necessita .bdg-dot{background:#5b8fe8;}
-.bdg.vazio{background:rgba(139,148,168,.1);border-color:#8b94a8;color:#8b94a8;}
-.bdg.vazio .bdg-dot{background:#8b94a8;}
+.bdg.autorizado{background:rgba(129,187,161,.1);border-color:#81BBA1;color:#81BBA1;}.bdg.autorizado .bdg-dot{background:#81BBA1;}
+.bdg.em-autorizacao{background:rgba(232,184,75,.1);border-color:#e8b84b;color:#e8b84b;}.bdg.em-autorizacao .bdg-dot{background:#e8b84b;}
+.bdg.nao-solicitado{background:rgba(155,125,234,.1);border-color:#9b7dea;color:#9b7dea;}.bdg.nao-solicitado .bdg-dot{background:#9b7dea;}
+.bdg.nao-necessita{background:rgba(91,143,232,.1);border-color:#5b8fe8;color:#5b8fe8;}.bdg.nao-necessita .bdg-dot{background:#5b8fe8;}
+.bdg.vazio{background:rgba(139,148,168,.1);border-color:#8b94a8;color:#8b94a8;}.bdg.vazio .bdg-dot{background:#8b94a8;}
 .cvt{font-size:11px;padding:3px 7px;border-radius:5px;background:#1e2535;color:#8b94a8;border:1px solid #2a3347;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px;}
 .vlt{font-family:'DM Mono',monospace;font-size:12px;color:#81BBA1;}
 .pp{font-size:10px;padding:2px 7px;border-radius:10px;font-family:'DM Mono',monospace;}
-.pp.ok{background:rgba(129,187,161,.15);color:#81BBA1;}
-.pp.fail{background:rgba(224,82,82,.1);color:#e05252;}
+.pp.ok{background:rgba(129,187,161,.15);color:#81BBA1;}.pp.fail{background:rgba(224,82,82,.1);color:#e05252;}
 .dp{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;}
 .dp.expired{background:rgba(224,82,82,.2);color:#e05252;border:1px solid rgba(224,82,82,.4);}
 .dp.critical{background:rgba(240,136,62,.2);color:#f0883e;border:1px solid rgba(240,136,62,.4);}
 .dp.warning{background:rgba(232,184,75,.2);color:#e8b84b;border:1px solid rgba(232,184,75,.4);}
 .dp.safe{background:rgba(129,187,161,.15);color:#81BBA1;border:1px solid rgba(129,187,161,.3);}
-.pulse{animation:pulse2 1.5s infinite;}
-@keyframes pulse2{0%,100%{opacity:1;}50%{opacity:.4;}}
-.fbody{display:none;border-top:1px solid #2a3347;}
-.fcard.open .fbody{display:block;}
-.vb{padding:16px;background:#1e2535;}
-.vg{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-.vgf{grid-column:1/-1;}
+.fbody{display:none;border-top:1px solid #2a3347;}.fcard.open .fbody{display:block;}
+.vb{padding:16px;background:#1e2535;}.vg{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.vgf{grid-column:1/-1;}
 .stl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#8b94a8;margin-bottom:8px;font-weight:500;}
-.ck-list{display:flex;flex-direction:column;gap:6px;}
-.ck-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+.ck-list{display:flex;flex-direction:column;gap:6px;}.ck-row{display:flex;align-items:center;gap:8px;font-size:12px;}
 .cki{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}
-.cki.ok{background:rgba(129,187,161,.2);color:#81BBA1;}
-.cki.fail{background:rgba(224,82,82,.15);color:#e05252;}
-.cki.warn{background:rgba(232,184,75,.15);color:#e8b84b;}
+.cki.ok{background:rgba(129,187,161,.2);color:#81BBA1;}.cki.fail{background:rgba(224,82,82,.15);color:#e05252;}.cki.warn{background:rgba(232,184,75,.15);color:#e8b84b;}
 .cv2{margin-left:auto;font-size:10px;color:#8b94a8;}
 .lmb{font-size:12px;color:#e8b84b;background:rgba(232,184,75,.07);border:1px solid rgba(232,184,75,.2);border-radius:8px;padding:10px 14px;line-height:1.5;font-style:italic;}
 .plb{font-size:12px;color:#8b94a8;line-height:1.6;background:#161b25;border-radius:8px;padding:10px 14px;border:1px solid #2a3347;}
@@ -283,8 +213,7 @@ const FC_STYLES = `
 .dlb.safe{background:rgba(129,187,161,.08);border:1px solid rgba(129,187,161,.2);color:#81BBA1;}
 .dlb.none{background:#161b25;border:1px solid #2a3347;color:#8b94a8;}
 .eb{padding:18px;background:#161e2e;border-top:2px solid #5B9776;}
-.eg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.egf{grid-column:1/-1;}
+.eg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}.egf{grid-column:1/-1;}
 .eg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;grid-column:1/-1;}
 .efg{display:flex;flex-direction:column;gap:5px;}
 .efg label{font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;font-weight:500;}
@@ -298,8 +227,7 @@ input[type="date"]{color-scheme:dark;}
 .btn-sv{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid rgba(129,187,161,.3);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;background:rgba(129,187,161,.15);color:#81BBA1;font-weight:500;}
 .btn-gh{display:inline-flex;align-items:center;padding:7px 14px;border-radius:8px;background:#1e2535;color:#8b94a8;border:1px solid #2a3347;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;}
 .btn-del{display:inline-flex;align-items:center;padding:7px 14px;border-radius:8px;background:rgba(224,82,82,.12);color:#e05252;border:1px solid rgba(224,82,82,.25);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;}
-.star-edit{font-size:26px;cursor:pointer;line-height:1;transition:transform .1s;}
-.star-edit:hover{transform:scale(1.2);}
+.star-edit{font-size:26px;cursor:pointer;line-height:1;transition:transform .1s;}.star-edit:hover{transform:scale(1.2);}
 .urg-row{display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:10px;padding:11px 18px;border-bottom:1px solid rgba(42,51,71,.6);align-items:center;}
 .urg-row:last-child{border-bottom:none;}
 .urg-row.expired{background:rgba(224,82,82,.07);border-left:3px solid #e05252;}
@@ -309,150 +237,71 @@ input[type="date"]{color-scheme:dark;}
 .loading-box{text-align:center;padding:60px;color:#8b94a8;font-size:13px;}
 </style>`;
 
-async function fcLoadFromSheets() {
+async function fcLoadFromSheets(){
   syncStart('fc-sync-icon');
-  try {
-    const res = await apiGet('fila_cirurgica');
-    if (res.error) throw new Error(res.error);
-    DB.ativas = []; DB.futuras = [];
-    (res.rows||[]).forEach(r => {
-      const p = {
-        id:r.id, nome:r.nome||'', cirurgia:r.cirurgia||'', status:r.status||'',
-        convenio:r.convenio||'', valor:r.valor?parseFloat(r.valor):null,
-        deadline:r.deadline||'', lembrete:r.lembrete||'',
-        sabao:r.sabao||'NÃO ENTREGUE', exames:r.exames||'NÃO ENTREGUE',
-        orient:r.orient||'FALTA ENTREGAR', anest:r.anest||'NÃO ENTREGUE',
-        cardio:r.cardio||'NÃO SE APLICA', bactroban:r.bactroban||'NÃO SE APLICA',
-        plano:r.plano||'', stars:parseInt(r.stars)||0, tab:r.tab||'ativas'
-      };
-      if (p.tab==='futuras') DB.futuras.push(p); else DB.ativas.push(p);
+  try{
+    const res=await apiGet('fila_cirurgica');
+    if(res.error)throw new Error(res.error);
+    DB.ativas=[];DB.futuras=[];
+    (res.rows||[]).forEach(r=>{
+      const p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas'};
+      if(p.tab==='futuras')DB.futuras.push(p);else DB.ativas.push(p);
     });
-    fcRender();
-    showToast('✅ Fila sincronizada!');
-  } catch(e) { showToast('Erro: '+e.message, true); }
+    fcRender();showToast('✅ Fila sincronizada!');
+  }catch(e){showToast('Erro: '+e.message,true);}
   syncEnd('fc-sync-icon');
 }
+async function fcSaveToSheets(p){const res=await apiSave('fila_cirurgica',{...p,tab:fcTab});if(res.ok){p.id=res.id;showToast('💾 Salvo!');}else showToast('Erro ao salvar',true);}
+async function fcDeleteFromSheets(id){if(id)await apiDelete('fila_cirurgica',id);}
 
-async function fcSaveToSheets(p) {
-  const res = await apiSave('fila_cirurgica', {...p, tab:fcTab});
-  if (res.ok) { p.id = res.id; showToast('💾 Salvo!'); }
-  else showToast('Erro ao salvar', true);
-}
-
-async function fcDeleteFromSheets(id) {
-  if (id) await apiDelete('fila_cirurgica', id);
-}
-
-function initFila() {
-  if (fcInited) { fcLoadFromSheets(); return; }
-  fcInited = true;
-  document.getElementById('fc-body').innerHTML = FC_STYLES + `
-    <div class="fc-tabs">
-      <button class="fc-tab active" id="fct-ativas" onclick="fcSetTab('ativas')">Ativas</button>
-      <button class="fc-tab" id="fct-futuras" onclick="fcSetTab('futuras')">Futuras</button>
-      <button class="fc-tab" id="fct-prazos" onclick="fcSetTab('prazos')">⏰ Prazos</button>
-    </div>
-    <div class="fc-ctrl" id="fc-ctrl">
-      <input type="text" id="fc-search" placeholder="🔍  Buscar..." oninput="fcRender()">
-      <select id="fc-fs" onchange="fcRender()">
-        <option value="">Todos os status</option>
-        <option value="AUTORIZADO">Autorizado</option>
-        <option value="EM AUTORIZAÇÃO">Em Autorização</option>
-        <option value="AINDA NÃO SOLICITADO">Não Solicitado</option>
-        <option value="NÃO NECESSITA">Não Necessita</option>
-      </select>
-      <select id="fc-fc" onchange="fcRender()">
-        <option value="">Todos os convênios</option>
-        <option value="PARTICULAR">Particular</option>
-        <option value="BRADESCO">Bradesco</option>
-        <option value="UNIMED">Unimed</option>
-        <option value="SULAMERICA">Sulamerica</option>
-      </select>
-      <button class="fc-btn-new" onclick="fcAddNew()">＋ Novo Paciente</button>
-    </div>
-    <div class="fc-main"><div class="fc-grid" id="fc-grid"><div class="loading-box">⏳ Carregando do Google Sheets...</div></div></div>`;
+function initFila(){
+  if(fcInited){fcLoadFromSheets();return;}
+  fcInited=true;
+  document.getElementById('fc-body').innerHTML=FC_CSS+`
+  <div class="fc-tabs">
+    <button class="fc-tab active" id="fct-ativas" onclick="fcSetTab('ativas')">Ativas</button>
+    <button class="fc-tab" id="fct-futuras" onclick="fcSetTab('futuras')">Futuras</button>
+    <button class="fc-tab" id="fct-prazos" onclick="fcSetTab('prazos')">⏰ Prazos</button>
+  </div>
+  <div class="fc-ctrl" id="fc-ctrl">
+    <input type="text" id="fc-search" placeholder="🔍  Buscar..." oninput="fcRender()">
+    <select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option value="AUTORIZADO">Autorizado</option><option value="EM AUTORIZAÇÃO">Em Autorização</option><option value="AINDA NÃO SOLICITADO">Não Solicitado</option><option value="NÃO NECESSITA">Não Necessita</option></select>
+    <select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option><option value="PARTICULAR">Particular</option><option value="BRADESCO">Bradesco</option><option value="UNIMED">Unimed</option><option value="SULAMERICA">Sulamerica</option></select>
+    <button class="fc-btn-new" onclick="fcAddNew()">＋ Novo Paciente</button>
+  </div>
+  <div class="fc-main"><div class="fc-grid" id="fc-grid"><div class="loading-box">⏳ Carregando do Google Sheets...</div></div></div>`;
   fcLoadFromSheets();
 }
 
-function fcGetPrazos() { return [...DB.ativas,...DB.futuras].filter(p=>p.deadline).map(p=>({p,days:daysTo(p.deadline)})).filter(x=>x.days!==null).sort((a,b)=>a.days-b.days); }
-function fcUpdateBadges() {
-  const items=fcGetPrazos(), exp=items.filter(x=>x.days<0).length, soon=items.filter(x=>x.days>=0&&x.days<=7).length;
-  const el=document.getElementById('fct-prazos'); if(!el)return;
-  el.querySelectorAll('.ab').forEach(e=>e.remove());
-  if(exp>0) el.insertAdjacentHTML('beforeend',`<span class="ab">${exp}</span>`);
-  else if(soon>0) el.insertAdjacentHTML('beforeend',`<span class="ab warn">${soon}</span>`);
-}
-function fcSetTab(t) {
-  fcTab=t; if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}
-  ['ativas','futuras','prazos'].forEach(id=>{const el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});
-  const ctrl=document.getElementById('fc-ctrl'); if(ctrl)ctrl.style.display=(t==='prazos')?'none':'flex';
-  fcRender();
-}
-function fcStarHtml(i,stars) { return [1,2,3,4,5].map(n=>`<span class="star" style="color:${n<=stars?'#e8b84b':'#3a4a63'}" onclick="fcSetStars(event,${i},${n})">${n<=stars?'★':'☆'}</span>`).join(''); }
-function fcSetStars(e,i,n) { e.stopPropagation(); const cur=DB[fcTab][i].stars||0; DB[fcTab][i].stars=(cur===n?0:n); fcSaveToSheets(DB[fcTab][i]); fcRender(); }
+function fcGetPrazos(){return[...DB.ativas,...DB.futuras].filter(p=>p.deadline).map(p=>({p,days:daysTo(p.deadline)})).filter(x=>x.days!==null).sort((a,b)=>a.days-b.days);}
+function fcUpdateBadges(){const items=fcGetPrazos(),exp=items.filter(x=>x.days<0).length,soon=items.filter(x=>x.days>=0&&x.days<=7).length;const el=document.getElementById('fct-prazos');if(!el)return;el.querySelectorAll('.ab').forEach(e=>e.remove());if(exp>0)el.insertAdjacentHTML('beforeend',`<span class="ab">${exp}</span>`);else if(soon>0)el.insertAdjacentHTML('beforeend',`<span class="ab warn">${soon}</span>`);}
+function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','futuras','prazos'].forEach(id=>{const el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});const ctrl=document.getElementById('fc-ctrl');if(ctrl)ctrl.style.display=(t==='prazos')?'none':'flex';fcRender();}
+function fcStarHtml(i,stars){return[1,2,3,4,5].map(n=>`<span class="star" style="color:${n<=stars?'#e8b84b':'#3a4a63'}" onclick="fcSetStars(event,${i},${n})">${n<=stars?'★':'☆'}</span>`).join('');}
+function fcSetStars(e,i,n){e.stopPropagation();const cur=DB[fcTab][i].stars||0;DB[fcTab][i].stars=(cur===n?0:n);fcSaveToSheets(DB[fcTab][i]);fcRender();}
 
-function fcViewBody(p,i) {
+function fcViewBody(p,i){
   const days=daysTo(p.deadline),dc=dlClass(days),dl=dlLabel(days);
   const checks=[{l:'Sabão/Bactroban pré-op',v:p.sabao},{l:'Exames de sangue',v:p.exames},{l:'Orientações paciente',v:p.orient},{l:'Avaliação anestesista',v:p.anest},{l:'Avaliação cardiologista',v:p.cardio},{l:'Receita Bactroban',v:p.bactroban}];
-  return `<div class="vb"><div class="vg">
-    ${p.deadline||dl?`<div class="dlb ${dc} vgf"><span>📅</span><div><strong>Prazo:</strong> ${p.deadline||'—'}${dl?' · <strong>'+dl+'</strong>':''}</div></div>`:''}
-    ${p.lembrete?`<div class="lmb vgf">⚠️ ${esc(p.lembrete)}</div>`:''}
-    <div><div class="stl">Checklist</div><div class="ck-list">${checks.map(c=>{const ic=fci(c.v);return`<div class="ck-row"><div class="cki ${ic.c}">${ic.i}</div><span>${c.l}</span><span class="cv2">${esc(c.v||'—')}</span></div>`;}).join('')}</div></div>
-    <div><div class="stl">Detalhes</div><div class="ck-list">
-      <div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>${esc(p.convenio||'—')}</span></div>
-      <div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">${fmtR(p.valor)}</span></div>
-      <div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>${sLabel(p.status)}</span></div>
-    </div></div>
-    ${p.plano?`<div class="plb vgf"><span class="plbl">Plano Cirúrgico</span>${esc(p.plano)}</div>`:''}
-  </div><div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn-sv" onclick="fcStartEdit(${i});event.stopPropagation()">✏️ Editar</button></div></div>`;
+  return`<div class="vb"><div class="vg">${p.deadline||dl?`<div class="dlb ${dc} vgf"><span>📅</span><div><strong>Prazo:</strong> ${p.deadline||'—'}${dl?' · <strong>'+dl+'</strong>':''}</div></div>':''}${p.lembrete?`<div class="lmb vgf">⚠️ ${esc(p.lembrete)}</div>`:''}<div><div class="stl">Checklist</div><div class="ck-list">${checks.map(c=>{const ic=fci(c.v);return`<div class="ck-row"><div class="cki ${ic.c}">${ic.i}</div><span>${c.l}</span><span class="cv2">${esc(c.v||'—')}</span></div>`;}).join('')}</div></div><div><div class="stl">Detalhes</div><div class="ck-list"><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>${esc(p.convenio||'—')}</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">${fmtR(p.valor)}</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>${sLabel(p.status)}</span></div></div></div>${p.plano?`<div class="plb vgf"><span class="plbl">Plano Cirúrgico</span>${esc(p.plano)}</div>`:''}</div><div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn-sv" onclick="fcStartEdit(${i});event.stopPropagation()">✏️ Editar</button></div></div>`;
 }
 
-function fcEditStarHtml(i,stars) { return [1,2,3,4,5].map(n=>`<span class="star-edit" id="estr-${i}-${n}" style="color:${n<=stars?'#e8b84b':'#3a4a63'}" onclick="fcEditSetStars(${i},${n})">${n<=stars?'★':'☆'}</span>`).join(''); }
-function fcEditSetStars(i,n) {
-  const cur=parseInt(document.getElementById('ee-stars-'+i).value)||0, nv=cur===n?0:n;
-  document.getElementById('ee-stars-'+i).value=nv;
-  [1,2,3,4,5].forEach(k=>{const el=document.getElementById('estr-'+i+'-'+k);if(el){el.textContent=k<=nv?'★':'☆';el.style.color=k<=nv?'#e8b84b':'#3a4a63';}});
-}
+function fcEditStarHtml(i,stars){return[1,2,3,4,5].map(n=>`<span class="star-edit" id="estr-${i}-${n}" style="color:${n<=stars?'#e8b84b':'#3a4a63'}" onclick="fcEditSetStars(${i},${n})">${n<=stars?'★':'☆'}</span>`).join('');}
+function fcEditSetStars(i,n){const cur=parseInt(document.getElementById('ee-stars-'+i).value)||0,nv=cur===n?0:n;document.getElementById('ee-stars-'+i).value=nv;[1,2,3,4,5].forEach(k=>{const el=document.getElementById('estr-'+i+'-'+k);if(el){el.textContent=k<=nv?'★':'☆';el.style.color=k<=nv?'#e8b84b':'#3a4a63';}});}
 
-function fcEditBody(p,i) {
+function fcEditBody(p,i){
   const s=p.stars||0;
-  return `<div class="eb">
-    <div class="es"><div class="est">Dados Básicos</div><div class="eg">
-      <div class="efg egf"><label>Nome</label><input id="ee-nome-${i}" type="text" value="${esc(p.nome)}"></div>
-      <div class="efg egf"><label>Cirurgia</label><input id="ee-cirurgia-${i}" type="text" value="${esc(p.cirurgia)}"></div>
-      <div class="efg"><label>Convênio</label><input id="ee-convenio-${i}" type="text" value="${esc(p.convenio||'')}"></div>
-      <div class="efg"><label>Valor (R$)</label><input id="ee-valor-${i}" type="number" value="${p.valor||''}"></div>
-      <div class="efg"><label>Status</label><select id="ee-status-${i}">${selOpts(SEL_STATUS,p.status)}</select></div>
-      <div class="efg"><label>📅 Prazo Limite</label><input id="ee-deadline-${i}" type="date" value="${esc(p.deadline||'')}"></div>
-      <div class="efg egf"><label>⭐ Prioridade</label><div style="display:flex;gap:6px;align-items:center;margin-top:4px">${fcEditStarHtml(i,s)}<input type="hidden" id="ee-stars-${i}" value="${s}"></div></div>
-    </div></div>
-    <div class="es"><div class="est">Checklist Pré-op</div><div class="eg3 eg">
-      <div class="efg"><label>Sabão/Bactroban</label><select id="ee-sabao-${i}">${selOpts(SEL_CHK,p.sabao)}</select></div>
-      <div class="efg"><label>Exames</label><select id="ee-exames-${i}">${selOpts(SEL_CHK,p.exames)}</select></div>
-      <div class="efg"><label>Orientações</label><select id="ee-orient-${i}">${selOpts(SEL_CHK,p.orient)}</select></div>
-      <div class="efg"><label>Anestesista</label><select id="ee-anest-${i}">${selOpts(SEL_CHK,p.anest)}</select></div>
-      <div class="efg"><label>Cardiologista</label><select id="ee-cardio-${i}">${selOpts(SEL_CHK,p.cardio)}</select></div>
-      <div class="efg"><label>Rec. Bactroban</label><select id="ee-bactroban-${i}">${selOpts(SEL_CHK,p.bactroban)}</select></div>
-    </div></div>
-    <div class="es"><div class="est">Plano Cirúrgico</div><div class="efg"><textarea id="ee-plano-${i}">${esc(p.plano||'')}</textarea></div></div>
-    <div class="es" style="margin-bottom:0"><div class="est">Lembrete</div><div class="efg"><textarea id="ee-lembrete-${i}" style="min-height:52px">${esc(p.lembrete||'')}</textarea></div></div>
-    <div class="ef">
-      <button class="btn-del" onclick="fcDelete(${i});event.stopPropagation()">🗑️ Remover</button>
-      <button class="btn-gh" onclick="fcCancelEdit(${i});event.stopPropagation()">Cancelar</button>
-      <button class="btn-sv" onclick="fcSaveEdit(${i});event.stopPropagation()">💾 Salvar</button>
-    </div>
-  </div>`;
+  return`<div class="eb"><div class="es"><div class="est">Dados Básicos</div><div class="eg"><div class="efg egf"><label>Nome</label><input id="ee-nome-${i}" type="text" value="${esc(p.nome)}"></div><div class="efg egf"><label>Cirurgia</label><input id="ee-cirurgia-${i}" type="text" value="${esc(p.cirurgia)}"></div><div class="efg"><label>Convênio</label><input id="ee-convenio-${i}" type="text" value="${esc(p.convenio||'')}"></div><div class="efg"><label>Valor (R$)</label><input id="ee-valor-${i}" type="number" value="${p.valor||''}"></div><div class="efg"><label>Status</label><select id="ee-status-${i}">${selOpts(SEL_STATUS,p.status)}</select></div><div class="efg"><label>📅 Prazo Limite</label><input id="ee-deadline-${i}" type="date" value="${esc(p.deadline||'')}"></div><div class="efg egf"><label>⭐ Prioridade</label><div style="display:flex;gap:6px;align-items:center;margin-top:4px">${fcEditStarHtml(i,s)}<input type="hidden" id="ee-stars-${i}" value="${s}"></div></div></div></div><div class="es"><div class="est">Checklist Pré-op</div><div class="eg3 eg"><div class="efg"><label>Sabão/Bactroban</label><select id="ee-sabao-${i}">${selOpts(SEL_CHK,p.sabao)}</select></div><div class="efg"><label>Exames</label><select id="ee-exames-${i}">${selOpts(SEL_CHK,p.exames)}</select></div><div class="efg"><label>Orientações</label><select id="ee-orient-${i}">${selOpts(SEL_CHK,p.orient)}</select></div><div class="efg"><label>Anestesista</label><select id="ee-anest-${i}">${selOpts(SEL_CHK,p.anest)}</select></div><div class="efg"><label>Cardiologista</label><select id="ee-cardio-${i}">${selOpts(SEL_CHK,p.cardio)}</select></div><div class="efg"><label>Rec. Bactroban</label><select id="ee-bactroban-${i}">${selOpts(SEL_CHK,p.bactroban)}</select></div></div></div><div class="es"><div class="est">Plano Cirúrgico</div><div class="efg"><textarea id="ee-plano-${i}">${esc(p.plano||'')}</textarea></div></div><div class="es" style="margin-bottom:0"><div class="est">Lembrete</div><div class="efg"><textarea id="ee-lembrete-${i}" style="min-height:52px">${esc(p.lembrete||'')}</textarea></div></div><div class="ef"><button class="btn-del" onclick="fcDelete(${i});event.stopPropagation()">🗑️ Remover</button><button class="btn-gh" onclick="fcCancelEdit(${i});event.stopPropagation()">Cancelar</button><button class="btn-sv" onclick="fcSaveEdit(${i});event.stopPropagation()">💾 Salvar</button></div></div>`;
 }
 
-function fcRender() {
+function fcRender(){
   fcUpdateBadges();
-  if (fcTab==='prazos') { fcRenderPrazos(); return; }
+  if(fcTab==='prazos'){fcRenderPrazos();return;}
   const q=(document.getElementById('fc-search')||{}).value?.toLowerCase()||'';
   const fs=(document.getElementById('fc-fs')||{}).value?.toUpperCase()||'';
   const fc=(document.getElementById('fc-fc')||{}).value?.toUpperCase()||'';
   const all=DB[fcTab];
   const sc=document.getElementById('fc-stats');
-  if(sc) sc.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"><span style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1">${all.length}</span><span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total</span></div>`;
+  if(sc)sc.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"><span style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1">${all.length}</span><span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total</span></div>`;
   const filtered=[];
   all.forEach((p,i)=>{
     if(q&&!(p.nome+p.cirurgia+p.convenio+p.lembrete+p.plano).toLowerCase().includes(q))return;
@@ -462,34 +311,19 @@ function fcRender() {
   });
   filtered.sort((a,b)=>(b.p.stars||0)-(a.p.stars||0));
   const g=document.getElementById('fc-grid');
-  if(!filtered.length){g.innerHTML='<div class="fc-empty">Nenhum paciente encontrado.<br><small>Clique em Sincronizar para carregar do Sheets.</small></div>';return;}
+  if(!filtered.length){g.innerHTML='<div class="fc-empty">Nenhum paciente encontrado.</div>';return;}
   g.innerHTML=filtered.map(({p,i})=>{
-    const sc2=score(p), isOpen=fcOpen.has(i), isEditing=fcEdit.has(i);
-    const days=daysTo(p.deadline), dc=dlClass(days);
+    const sc2=score(p),isOpen=fcOpen.has(i),isEditing=fcEdit.has(i);
+    const days=daysTo(p.deadline),dc=dlClass(days);
     const dpill=days!==null?`<span class="dp ${dc}" style="margin-left:5px">${days<0?'⚠'+Math.abs(days)+'d':days===0?'hoje':days+'d'}</span>`:'';
     const cdl=days===null?'':(days<0?' ce':days<=2?' cc':days<=7?' cw':'');
-    return `<div class="fcard${isOpen?' open':''}${isEditing?' editing':''}${cdl}" id="fc-card-${i}">
-      <div class="fhdr" onclick="fcToggle(${i})">
-        <div class="stars-col" onclick="event.stopPropagation()">${fcStarHtml(i,p.stars||0)}</div>
-        <div><div class="pname">${esc(p.nome)}${dpill}</div><div class="surg">${esc(p.cirurgia)}</div>${p.lembrete?`<div class="lmb-inline">⚠ ${esc(p.lembrete)}</div>`:''}</div>
-        <span class="bdg ${sClass(p.status)}"><span class="bdg-dot"></span>${sLabel(p.status)}</span>
-        <span class="cvt">${esc(p.convenio||'—')}</span>
-        <span class="vlt">${fmtR(p.valor)}</span>
-        <span class="pp ${sc2.done===sc2.total?'ok':'fail'}">${sc2.done}/${sc2.total}</span>
-        <span style="color:#8b94a8;font-size:16px;display:inline-block;transform:rotate(${isOpen?180:0}deg);transition:transform .2s">▾</span>
-      </div>
-      <div class="fbody">${isEditing?fcEditBody(p,i):fcViewBody(p,i)}</div>
-    </div>`;
+    return`<div class="fcard${isOpen?' open':''}${isEditing?' editing':''}${cdl}" id="fc-card-${i}"><div class="fhdr" onclick="fcToggle(${i})"><div class="stars-col" onclick="event.stopPropagation()">${fcStarHtml(i,p.stars||0)}</div><div><div class="pname">${esc(p.nome)}${dpill}</div><div class="surg">${esc(p.cirurgia)}</div>${p.lembrete?`<div class="lmb-inline">⚠ ${esc(p.lembrete)}</div>`:''}</div><span class="bdg ${sClass(p.status)}"><span class="bdg-dot"></span>${sLabel(p.status)}</span><span class="cvt">${esc(p.convenio||'—')}</span><span class="vlt">${fmtR(p.valor)}</span><span class="pp ${sc2.done===sc2.total?'ok':'fail'}">${sc2.done}/${sc2.total}</span><span style="color:#8b94a8;font-size:16px;display:inline-block;transform:rotate(${isOpen?180:0}deg);transition:transform .2s">▾</span></div><div class="fbody">${isEditing?fcEditBody(p,i):fcViewBody(p,i)}</div></div>`;
   }).join('');
 }
 
-function fcRenderPrazos() {
+function fcRenderPrazos(){
   const items=fcGetPrazos();
-  const sec=(title,list,icon)=>{
-    if(!list.length)return'';
-    return`<div style="padding:12px 18px 0"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8b94a8;font-weight:600;margin-bottom:8px">${icon} ${title}</div></div>`
-      +list.map(({p,days})=>`<div class="urg-row ${dlClass(days)}"><div><div style="font-size:13px;font-weight:500">${esc(p.nome)}</div><div style="font-size:11px;color:#8b94a8">${esc(p.cirurgia)}</div></div><span class="dp ${dlClass(days)}${days<0?' pulse2':''}">${dlLabel(days)}</span><span style="font-size:11px;color:#8b94a8">${esc(p.convenio||'—')}</span><span class="bdg ${sClass(p.status)}" style="font-size:10px"><span class="bdg-dot"></span>${sLabel(p.status)}</span><span style="font-size:11px;color:#8b94a8;font-family:'DM Mono',monospace">${p.deadline}</span></div>`).join('');
-  };
+  const sec=(title,list,icon)=>{if(!list.length)return'';return`<div style="padding:12px 18px 0"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8b94a8;font-weight:600;margin-bottom:8px">${icon} ${title}</div></div>`+list.map(({p,days})=>`<div class="urg-row ${dlClass(days)}"><div><div style="font-size:13px;font-weight:500">${esc(p.nome)}</div><div style="font-size:11px;color:#8b94a8">${esc(p.cirurgia)}</div></div><span class="dp ${dlClass(days)}">${dlLabel(days)}</span><span style="font-size:11px;color:#8b94a8">${esc(p.convenio||'—')}</span><span class="bdg ${sClass(p.status)}" style="font-size:10px"><span class="bdg-dot"></span>${sLabel(p.status)}</span><span style="font-size:11px;color:#8b94a8;font-family:'DM Mono',monospace">${p.deadline}</span></div>`).join('');};
   let html=sec('VENCIDAS',items.filter(x=>x.days<0),'🚨')+sec('PRÓXIMOS 7 DIAS',items.filter(x=>x.days>=0&&x.days<=7),'⚠️')+sec('PRÓXIMAS SEMANAS',items.filter(x=>x.days>7),'📅');
   if(!items.length)html='<div class="fc-empty">Nenhum prazo cadastrado.</div>';
   document.getElementById('fc-grid').innerHTML=`<div style="background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden">${html}</div>`;
@@ -511,7 +345,7 @@ async function fcAddNew(){
 }
 
 // ══════════════════════════════════════
-// CALCULADORA DE HONORÁRIOS
+// CALCULADORA
 // ══════════════════════════════════════
 const HC_IMPOSTOS=0.1529;
 const HC_TAXAS={debito:0.0156,avista:0.021,parcel26:0.022,parcel712:0.022};
@@ -527,7 +361,7 @@ const hcFmt=n=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).
 const hcPct=n=>(n*100).toFixed(2)+"%";
 
 function initCalc(){
-  if(hcInited)return; hcInited=true;
+  if(hcInited)return;hcInited=true;
   document.getElementById('calc-body').innerHTML=`<style>
 .hc-wrap{max-width:700px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:14px;}
 .hc-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 12px rgba(73,103,80,.08);border:1px solid rgba(73,103,80,.1);}
@@ -538,18 +372,15 @@ function initCalc(){
 .hc-pi{flex:1;border:none;outline:none;padding:0 14px;font-size:17px;color:#222;background:transparent;height:48px;}
 .hc-cg{display:flex;flex-wrap:wrap;gap:8px;}
 .hc-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 14px;border-radius:8px;border:1.5px solid #DBE7DC;background:#fafaf8;cursor:pointer;font-size:13px;color:#333;transition:all .15s;min-width:90px;}
-.hc-chip:hover{border-color:#5B9776;}
-.hc-chip.active{background:#496750;color:#fff;border-color:#496750;}
+.hc-chip:hover{border-color:#5B9776;}.hc-chip.active{background:#496750;color:#fff;border-color:#496750;}
 .hc-chip-sub{font-size:12px;opacity:.7;}
 .hc-iw{display:flex;align-items:center;border:1.5px solid #DBE7DC;border-radius:8px;overflow:hidden;background:#fafaf8;}
 .hc-pfx{padding:0 12px;font-size:15px;color:#5B9776;font-weight:700;background:#DBE7DC;height:48px;display:flex;align-items:center;}
 .hc-mi{flex:1;border:none;outline:none;padding:0 14px;font-size:22px;color:#222;background:transparent;height:48px;}
 .hc-pb{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid #DBE7DC;margin-bottom:16px;}
 .hc-pbb{flex:1;padding:9px 0;text-align:center;font-size:12px;font-weight:700;cursor:pointer;background:#fafaf8;color:#496750;border:none;transition:all .15s;}
-.hc-pbb.active{background:#496750;color:#fff;}
-.hc-pbb:not(:last-child){border-right:1.5px solid #DBE7DC;}
-.hc-sr{display:flex;gap:14px;}
-.hc-sc{flex:1;}
+.hc-pbb.active{background:#496750;color:#fff;}.hc-pbb:not(:last-child){border-right:1.5px solid #DBE7DC;}
+.hc-sr{display:flex;gap:14px;}.hc-sc{flex:1;}
 .hc-sl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
 .hc-pcw{display:flex;align-items:center;border:1.5px solid #DBE7DC;border-radius:8px;overflow:hidden;background:#fafaf8;margin-bottom:10px;}
 .hc-pcpfx{padding:0 10px;font-size:13px;color:#5B9776;font-weight:700;background:#eef3ef;height:38px;display:flex;align-items:center;}
@@ -569,19 +400,16 @@ function initCalc(){
 .hc-bc{margin-top:16px;width:100%;padding:14px 0;background:#496750;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;}
 .hc-bc:disabled{background:#A7A9AB;cursor:not-allowed;}
 .hc-cons{background:#496750;border-radius:10px;padding:14px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
-.hc-cv{font-size:22px;font-weight:700;}
-.hc-cl{font-size:12px;opacity:.8;}
+.hc-cv{font-size:22px;font-weight:700;}.hc-cl{font-size:12px;opacity:.8;}
 .hc-bw{display:flex;border-radius:8px;overflow:hidden;height:28px;}
 .hc-legend{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}
 .hc-li{display:flex;align-items:center;gap:4px;font-size:11px;color:#666;}
 .hc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
 .hc-brow{display:flex;justify-content:space-between;font-size:13px;color:#444;}
-.hc-brow.ded{color:#e07a5f;}
-.hc-div{border-top:1.5px solid #DBE7DC;margin:4px 0;}
+.hc-brow.ded{color:#e07a5f;}.hc-div{border-top:1.5px solid #DBE7DC;margin:4px 0;}
 .hc-btot{font-size:18px;font-weight:700;margin-top:2px;}
 .hc-pdf{margin-top:18px;width:100%;padding:12px 0;background:#fff;color:#496750;border:2px solid #496750;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}
-.hc-pdf:hover{background:#496750;color:#fff;}
-.hc-hidden{display:none!important;}
+.hc-pdf:hover{background:#496750;color:#fff;}.hc-hidden{display:none!important;}
 </style>
 <div class="hc-wrap">
   <div class="hc-card"><label class="hc-sec">👤 Nome do Paciente</label><div class="hc-pw"><span class="hc-pp">Paciente</span><input class="hc-pi" type="text" id="hc-paciente" placeholder="Nome completo"></div></div>
@@ -673,63 +501,46 @@ function hcRenderRes(r){
 }
 function hcExportarPDF(){
   if(!hcLastCalc){alert('Calcule os honorários primeiro.');return;}
-  const r=hcLastCalc, paciente=document.getElementById('hc-paciente').value.trim()||'Não informado';
+  const r=hcLastCalc,paciente=document.getElementById('hc-paciente').value.trim()||'Não informado';
   const procSel=HC_PROCS.find(p=>p.id===hcState.proc);
   const data=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
   const pagtoStr=r.mode==='unico'?r.pg.label:r.p1+'% '+r.pg1.label+' + '+r.p2+'% '+r.pg2.label;
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Honorários — ${paciente}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,Arial,sans-serif;padding:36px 44px;max-width:680px;margin:0 auto;color:#222}.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px}.cv{font-size:26px;color:#496750;font-weight:900;letter-spacing:-4px}.cons{background:#496750;border-radius:10px;padding:14px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:18px 0}.bp{display:block;margin:20px auto 0;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}@media print{.bp{display:none}}</style></head><body>
-  <div class="hdr"><div style="display:flex;align-items:center;gap:10px"><span class="cv">&gt;&gt;</span><div><div style="font-size:17px;font-weight:700;color:#496750">Dr. Marcelo Tostes</div><div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase">Ortopedia · Cirurgia do Joelho / Esporte</div></div></div><div style="text-align:right;font-size:11px;color:#888;line-height:1.8"><strong>RESUMO DE HONORÁRIOS</strong><br>${data}<br>CRM-SP 120.317</div></div>
-  <p style="font-size:18px;font-weight:700;color:#496750;margin-bottom:16px">👤 ${paciente}</p>
-  <table style="width:100%;border-collapse:collapse;border:1px solid #eee;margin-bottom:16px"><tr><td style="padding:6px 10px;color:#666">Procedimento</td><td style="padding:6px 10px;font-weight:600">${procSel?.icon||''} ${procSel?.label||'—'}</td></tr><tr style="background:#fafafa"><td style="padding:6px 10px;color:#666">Valor Bruto</td><td style="padding:6px 10px;font-weight:600">${hcFmt(r.bruto)}</td></tr><tr><td style="padding:6px 10px;color:#666">Pagamento</td><td style="padding:6px 10px;font-weight:600">${pagtoStr}</td></tr></table>
-  <div class="cons"><div><p style="font-size:11px;opacity:.8">Honorário Líquido Total</p><p style="font-size:22px;font-weight:700">${hcFmt(r.liquidoTotal)}</p></div><div style="text-align:right"><p style="font-size:11px;opacity:.8">Margem</p><p style="font-size:16px;font-weight:700">${hcPct(r.liquidoTotal/r.bruto)}</p></div></div>
-  <button class="bp" onclick="window.print()">🖨️ Salvar como PDF (Cmd+P)</button>
-  <div style="margin-top:22px;border-top:1px solid #DBE7DC;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;color:#aaa"><span>www.drmarcelotostes.com</span><span>Uso interno</span></div>
-  </body></html>`;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Honorários — ${paciente}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,Arial,sans-serif;padding:36px 44px;max-width:680px;margin:0 auto;color:#222}.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px}.cv{font-size:26px;color:#496750;font-weight:900;letter-spacing:-4px}.cons{background:#496750;border-radius:10px;padding:14px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:18px 0}.bp{display:block;margin:20px auto 0;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}@media print{.bp{display:none}}</style></head><body><div class="hdr"><div style="display:flex;align-items:center;gap:10px"><span class="cv">&gt;&gt;</span><div><div style="font-size:17px;font-weight:700;color:#496750">Dr. Marcelo Tostes</div><div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase">Ortopedia · Cirurgia do Joelho / Esporte</div></div></div><div style="text-align:right;font-size:11px;color:#888;line-height:1.8"><strong>RESUMO DE HONORÁRIOS</strong><br>${data}<br>CRM-SP 120.317</div></div><p style="font-size:18px;font-weight:700;color:#496750;margin-bottom:16px">👤 ${paciente}</p><table style="width:100%;border-collapse:collapse;border:1px solid #eee;margin-bottom:16px"><tr><td style="padding:6px 10px;color:#666">Procedimento</td><td style="padding:6px 10px;font-weight:600">${procSel?.icon||''} ${procSel?.label||'—'}</td></tr><tr style="background:#fafafa"><td style="padding:6px 10px;color:#666">Valor Bruto</td><td style="padding:6px 10px;font-weight:600">${hcFmt(r.bruto)}</td></tr><tr><td style="padding:6px 10px;color:#666">Pagamento</td><td style="padding:6px 10px;font-weight:600">${pagtoStr}</td></tr></table><div class="cons"><div><p style="font-size:11px;opacity:.8">Honorário Líquido Total</p><p style="font-size:22px;font-weight:700">${hcFmt(r.liquidoTotal)}</p></div><div style="text-align:right"><p style="font-size:11px;opacity:.8">Margem</p><p style="font-size:16px;font-weight:700">${hcPct(r.liquidoTotal/r.bruto)}</p></div></div><button class="bp" onclick="window.print()">🖨️ Salvar como PDF</button><div style="margin-top:22px;border-top:1px solid #DBE7DC;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;color:#aaa"><span>www.drmarcelotostes.com</span><span>Uso interno</span></div></body></html>`;
   const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='honorarios_'+paciente.replace(/\s+/g,'_')+'.html';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 // ══════════════════════════════════════
 // ATENDIMENTOS DO DIA
 // ══════════════════════════════════════
-let atendList=[], atendInited=false;
+let atendList=[],atendInited=false;
+let atDataAtual='';
 const ATEND_TIPOS=[{id:'primeira',label:'Primeira Consulta',icon:'🆕',cobra:true},{id:'nova',label:'Nova Consulta',icon:'📋',cobra:true},{id:'retorno',label:'Retorno',icon:'🔄',cobra:false}];
 const ATEND_PROCS=[{id:'viscokd',label:'Viscosuplementação KD',icon:'💉',valorBase:2100},{id:'viscoreviscon',label:'Viscosuplementação Reviscon',icon:'💉',valorBase:2100},{id:'artrocentese',label:'Artrocentese',icon:'🔬',valorBase:200},{id:'triancil',label:'Infiltração Triancil',icon:'💊',valorBase:600}];
 const ATEND_PGTO=[{id:'dinheiro',label:'Dinheiro',icon:'💵'},{id:'pix',label:'Pix',icon:'📲'},{id:'credito',label:'Crédito',icon:'💳'},{id:'debito',label:'Débito',icon:'💳'},{id:'cheque',label:'Cheque',icon:'📄'},{id:'duas',label:'Duas Formas',icon:'🔀'}];
 const atFmt=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n||0);
 const atToday=()=>new Date().toISOString().split('T')[0];
 
-async function atLoadFromSheets(){
-  syncStart('at-sync-icon');
-  try {
-    const res=await apiGet('atendimentos');if(res.error)throw new Error(res.error);
-    const today=atToday();
-    atendList=(res.rows||[]).filter(r=>r.data===today).map(r=>({
-      id:r.id, data:r.data, nome:r.nome||'', tipo:r.tipo||'',
-      consulta_valor:parseFloat(r.consulta_valor)||700,
-      consulta_nf:r.consulta_nf==='TRUE'||r.consulta_nf===true||r.consulta_nf==='true',
-      pgto:{modo:r.pgto_modo||'',tipo1:r.pgto_tipo1||'',tipo2:r.pgto_tipo2||'',parcelas1:parseInt(r.pgto_parcelas1)||1,parcelas2:parseInt(r.pgto_parcelas2)||1,valor1:parseFloat(r.pgto_valor1)||0,valor2:parseFloat(r.pgto_valor2)||0},
-      procs:Array.isArray(r.procs)?r.procs:(r.procs?JSON.parse(r.procs):[]),
-      salvo:true
-    }));
-    atRenderAll();showToast('✅ Atendimentos sincronizados!');
-  } catch(e){showToast('Erro: '+e.message,true);}
-  syncEnd('at-sync-icon');
-}
-
-async function atSaveToSheets(a){
-  const res=await apiSave('atendimentos',{id:a.id,data:a.data||atToday(),nome:a.nome,tipo:a.tipo,consulta_valor:a.consulta_valor,consulta_nf:a.consulta_nf,pgto_modo:a.pgto.modo,pgto_tipo1:a.pgto.tipo1,pgto_tipo2:a.pgto.tipo2,pgto_parcelas1:a.pgto.parcelas1,pgto_parcelas2:a.pgto.parcelas2,pgto_valor1:a.pgto.valor1,pgto_valor2:a.pgto.valor2,procs:JSON.stringify(a.procs||[])});
-  if(res.ok)a.id=res.id;
-}
-
 function initAtend(){
-  if(atendInited){ atLoadFromSheets(); return; } atendInited=true;
-  const now=new Date();
-  document.getElementById('atend-data-sub').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  document.getElementById('atend-body').innerHTML=`<style>
+  if(atendInited){atLoadFromSheets();return;}
+  atendInited=true;
+  atDataAtual=atToday();
+  document.getElementById('atend-body').innerHTML=atBodyHTML();
+  atUpdDataSub();
+  atLoadFromSheets();
+}
+
+function atBodyHTML(){
+  return`<style>
 .at-wrap{max-width:780px;margin:0 auto;padding:16px 16px 60px;}
 .at-topbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
-.at-btn-add{display:flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;border:none;background:#496750;color:#DBE7DC;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;}
-.at-btn-res{display:flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;border:2px solid #496750;background:transparent;color:#81BBA1;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;}
+.at-nav{display:flex;align-items:center;gap:6px;background:#161b25;border:1px solid #2a3347;border-radius:10px;padding:6px 10px;}
+.at-nav-btn{background:#1e2535;border:1px solid #2a3347;color:#8b94a8;border-radius:7px;padding:5px 11px;cursor:pointer;font-size:15px;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.at-nav-btn:hover{border-color:#5B9776;color:#81BBA1;}
+.at-nav-btn.hoje{font-size:11px;font-weight:700;color:#81BBA1;background:rgba(73,103,80,.2);border-color:rgba(91,151,118,.3);padding:5px 10px;}
+.at-nav-date{font-size:13px;font-weight:600;color:#e8edf5;min-width:90px;text-align:center;}
+.at-nav-picker{background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;color-scheme:dark;}
+.at-btn-add{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:none;background:#496750;color:#DBE7DC;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;}
+.at-btn-res{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:10px;border:2px solid #496750;background:transparent;color:#81BBA1;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;}
 .at-empty{text-align:center;padding:60px 20px;color:#8b94a8;}
 .at-cards{display:flex;flex-direction:column;gap:10px;}
 .at-card{background:#161b25;border:1px solid #2a3347;border-radius:14px;overflow:hidden;}
@@ -760,25 +571,87 @@ function initAtend(){
 .at-split-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
 .at-split-section{background:#1a2133;border-radius:8px;padding:10px 12px;border:1px solid #2a3347;}
 .at-split-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#5B9776;font-weight:700;margin-bottom:8px;}
-.at-summary-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;}
-.at-summary-box{background:#161b25;border:1px solid #2a3347;border-radius:16px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;padding:28px 28px 24px;}
-.at-summary-pdf-btn{width:100%;padding:11px 0;background:transparent;border:2px solid #496750;color:#81BBA1;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;margin-top:16px;}
+.at-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;}
+.at-overlay-box{background:#161b25;border:1px solid #2a3347;border-radius:16px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;padding:28px 28px 24px;}
+.at-ov-pdf{width:100%;padding:11px 0;background:transparent;border:2px solid #496750;color:#81BBA1;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;margin-top:16px;}
 </style>
 <div class="at-wrap">
   <div class="at-topbar">
-    <button class="at-btn-add" onclick="atAddPaciente()">＋ Adicionar Paciente</button>
-    <button class="at-btn-res" onclick="atShowResumo()">📊 Resumo do Dia</button>
+    <div class="at-nav">
+      <button class="at-nav-btn" onclick="atNavData(-1)">◀</button>
+      <span class="at-nav-date" id="at-nav-label">—</span>
+      <button class="at-nav-btn" onclick="atNavData(1)">▶</button>
+      <input type="date" class="at-nav-picker" id="at-nav-picker" onchange="atIrParaData(this.value)">
+      <button class="at-nav-btn hoje" onclick="atNavHoje()">Hoje</button>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="at-btn-add" onclick="atAddPaciente()">＋ Adicionar</button>
+      <button class="at-btn-res" onclick="atShowResumo()">📊 Resumo</button>
+    </div>
   </div>
   <div id="at-cards" class="at-cards"></div>
-  <div id="at-empty" class="at-empty"><div style="font-size:48px;margin-bottom:16px">📋</div><p style="font-size:15px;font-weight:600;margin-bottom:6px">Nenhum atendimento registrado</p><p style="font-size:13px">Clique em "Adicionar Paciente" ou "Sincronizar"</p></div>
+  <div id="at-empty" class="at-empty"><div style="font-size:48px;margin-bottom:16px">📋</div><p style="font-size:15px;font-weight:600;margin-bottom:6px">Nenhum atendimento neste dia</p><p style="font-size:13px">Use ◀ ▶ para navegar ou clique no calendário</p></div>
 </div>`;
+}
+
+function atUpdDataSub(){
+  const dt=new Date(atDataAtual+'T12:00:00');
+  const isHoje=atDataAtual===atToday();
+  const label=isHoje?'Hoje':dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const navLabel=document.getElementById('at-nav-label');if(navLabel)navLabel.textContent=label;
+  const picker=document.getElementById('at-nav-picker');if(picker)picker.value=atDataAtual;
+  const sub=document.getElementById('atend-data-sub');
+  if(sub)sub.textContent=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+(isHoje?' · Hoje':'');
+}
+function atNavData(dias){
+  const dt=new Date(atDataAtual+'T12:00:00');
+  dt.setDate(dt.getDate()+dias);
+  atDataAtual=dt.toISOString().split('T')[0];
+  atUpdDataSub();
+  atendList=[];
   atLoadFromSheets();
 }
+function atNavHoje(){
+  atDataAtual=atToday();
+  atUpdDataSub();
+  atendList=[];
+  atLoadFromSheets();
+}
+function atIrParaData(data){
+  if(!data)return;
+  atDataAtual=data;
+  atUpdDataSub();
+  atendList=[];
+  atLoadFromSheets();
+}
+
+async function atLoadFromSheets(){
+  syncStart('at-sync-icon');
+  try{
+    const res=await apiGet('atendimentos');if(res.error)throw new Error(res.error);
+    // só recarrega se não houver itens não salvos na tela
+    const temNaoSalvo=atendList.some(a=>!a.salvo);
+    if(temNaoSalvo){syncEnd('at-sync-icon');showToast('⚠️ Salve os atendimentos antes de sincronizar.',true);return;}
+    atendList=(res.rows||[]).filter(r=>r.data===atDataAtual).map(r=>({
+      id:r.id,data:r.data,nome:r.nome||'',tipo:r.tipo||'',
+      consulta_valor:parseFloat(r.consulta_valor)||700,
+      consulta_nf:r.consulta_nf==='TRUE'||r.consulta_nf===true||r.consulta_nf==='true',
+      pgto:{modo:r.pgto_modo||'',tipo1:r.pgto_tipo1||'',tipo2:r.pgto_tipo2||'',parcelas1:parseInt(r.pgto_parcelas1)||1,parcelas2:parseInt(r.pgto_parcelas2)||1,valor1:parseFloat(r.pgto_valor1)||0,valor2:parseFloat(r.pgto_valor2)||0},
+      procs:Array.isArray(r.procs)?r.procs:(r.procs?JSON.parse(r.procs):[]),
+      salvo:true
+    }));
+    atRenderAll();showToast('✅ Carregado!');
+  }catch(e){showToast('Erro: '+e.message,true);}
+  syncEnd('at-sync-icon');
+}
+
+async function atSaveToSheets(a){const res=await apiSave('atendimentos',{id:a.id,data:a.data||atDataAtual,nome:a.nome,tipo:a.tipo,consulta_valor:a.consulta_valor,consulta_nf:a.consulta_nf,pgto_modo:a.pgto.modo,pgto_tipo1:a.pgto.tipo1,pgto_tipo2:a.pgto.tipo2,pgto_parcelas1:a.pgto.parcelas1,pgto_parcelas2:a.pgto.parcelas2,pgto_valor1:a.pgto.valor1,pgto_valor2:a.pgto.valor2,procs:JSON.stringify(a.procs||[])});if(res.ok)a.id=res.id;}
 
 function atGet(id){return atendList.find(a=>a.id===id);}
 function atCalcTotal(a){const ti=ATEND_TIPOS.find(t=>t.id===a.tipo);const c=!ti||ti.cobra!==false;let t=c?(a.consulta_valor||0):0;(a.procs||[]).forEach(p=>t+=(p.valor||0));return t;}
 function atPgtoLabel(a){const pg=a.pgto;if(!pg||!pg.modo)return'—';if(pg.modo==='duas')return`${atFmt(pg.valor1||0)} ${atPgtoItemLabel(pg.tipo1,pg.parcelas1)} + ${atFmt(pg.valor2||0)} ${atPgtoItemLabel(pg.tipo2,pg.parcelas2)}`;return atPgtoItemLabel(pg.modo,pg.parcelas1);}
 function atPgtoItemLabel(tipo,parc){const m={dinheiro:'Dinheiro',pix:'Pix',credito:'Crédito',debito:'Débito',cheque:'Cheque'};let l=m[tipo]||tipo;if(tipo==='credito'&&parc>1)l+=` ${parc}x`;return l;}
+
 function atPgtoHTML(a){
   const pg=a.pgto;
   const chips=ATEND_PGTO.map(t=>`<button class="at-chip${pg.modo===t.id?' sel':''}" onclick="atUpdPgto('${a.id}','modo','${t.id}')">${t.icon} ${t.label}</button>`).join('');
@@ -795,14 +668,14 @@ function atCardHTML(a,num){
     const tipoColors={primeira:'#81BBA1',nova:'#5b8fe8',retorno:'#e8b84b'};
     const cor=tipoColors[a.tipo]||'#8b94a8';
     const procsStr=a.procs.length?(a.procs.map(p=>{const inf=ATEND_PROCS.find(pr=>pr.id===p.tipo);return inf?inf.label:'?';}).join(' · ')):'Apenas consulta';
-    return `<div class="at-card" id="at-card-${a.id}"><div class="at-card-hdr">
+    return`<div class="at-card" id="at-card-${a.id}"><div class="at-card-hdr">
       <div class="at-num" style="background:#1e2535;color:#81BBA1;border:1.5px solid #496750">${num}</div>
       <div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-weight:700;font-size:14px">${a.nome||'Paciente'}</span><span style="font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600;background:rgba(73,103,80,.2);color:${cor};border:1px solid ${cor}40">${tipoLabel}</span></div><div style="font-size:11px;color:#8b94a8;margin-top:3px">${procsStr}</div></div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span style="font-family:'DM Mono',monospace;font-size:15px;color:#81BBA1;font-weight:700">${atFmt(total)}</span><span style="font-size:11px;color:#8b94a8">${atPgtoLabel(a)}</span></div>
       <div style="display:flex;gap:6px;margin-left:12px"><button class="at-del-btn" style="background:rgba(91,151,118,.12);border-color:rgba(91,151,118,.3);color:#81BBA1" onclick="atEditar('${a.id}')">✏️</button><button class="at-del-btn" onclick="atDel('${a.id}')">✕</button></div>
     </div></div>`;
   }
-  return `<div class="at-card" id="at-card-${a.id}" style="border-color:#496750">
+  return`<div class="at-card" id="at-card-${a.id}" style="border-color:#496750">
     <div class="at-card-hdr"><div class="at-num">${num}</div><div class="at-nome">${a.nome||'<span style="color:#8b94a8;font-weight:400">Novo Paciente</span>'}</div>${a.tipo?`<span style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(91,151,118,.2);color:#81BBA1;border:1px solid rgba(91,151,118,.4)">${tipoLabel}</span>`:''}<div class="at-total-bdg">${atFmt(total)}</div><button class="at-del-btn" onclick="atDel('${a.id}')">✕</button></div>
     <div class="at-form">
       <div class="at-section"><div class="at-section-title">Dados do Paciente</div>
@@ -823,7 +696,7 @@ function atCardHTML(a,num){
 }
 
 function atRenderAll(){
-  const cards=document.getElementById('at-cards'), empty=document.getElementById('at-empty');
+  const cards=document.getElementById('at-cards'),empty=document.getElementById('at-empty');
   if(!cards)return;
   if(!atendList.length){cards.innerHTML='';if(empty)empty.style.display='block';atUpdStats();return;}
   if(empty)empty.style.display='none';
@@ -839,39 +712,78 @@ function atUpdProc(id,pi,field,val){const a=atGet(id);if(!a||!a.procs[pi])return
 function atDelProc(id,pi){const a=atGet(id);if(!a)return;a.procs.splice(pi,1);atRenderAll();}
 async function atDel(id){const a=atGet(id);atendList=atendList.filter(x=>x.id!==id);atRenderAll();if(a?.id&&!a.id.startsWith('local-'))await apiDelete('atendimentos',a.id);}
 function atEditar(id){const a=atGet(id);if(!a)return;a.salvo=false;atRenderAll();}
-async function atSalvar(id){const a=atGet(id);if(!a)return;a.salvo=true;a.data=atToday();atRenderAll();await atSaveToSheets(a);showToast('💾 Atendimento salvo!');}
-function atAddPaciente(){const id='local-'+Date.now();atendList.push({id,data:atToday(),nome:'',tipo:'',consulta_valor:700,consulta_nf:true,pgto:{modo:'',tipo1:'',tipo2:'',parcelas1:1,parcelas2:1,valor1:0,valor2:0},procs:[],salvo:false});atRenderAll();}
+async function atSalvar(id){
+  const a=atGet(id);if(!a)return;
+  a.salvo=true;
+  a.data=atDataAtual;
+  // salva no Sheets mas NÃO recarrega — mantém na tela
+  atRenderAll();
+  await atSaveToSheets(a);
+  showToast('💾 Atendimento salvo!');
+}
+function atAddPaciente(){const id='local-'+Date.now();atendList.push({id,data:atDataAtual,nome:'',tipo:'',consulta_valor:700,consulta_nf:true,pgto:{modo:'',tipo1:'',tipo2:'',parcelas1:1,parcelas2:1,valor1:0,valor2:0},procs:[],salvo:false});atRenderAll();}
 function atUpdStats(){const bar=document.getElementById('atend-stats-bar');if(!bar)return;const n=atendList.length,total=atendList.reduce((s,a)=>s+atCalcTotal(a),0);bar.innerHTML=n?`<div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"><span style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1">${n}</span><span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Pac.</span></div><div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"><span style="font-size:14px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1">${atFmt(total)}</span><span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Total</span></div>`:'';}
+
+async function atFecharDia(){
+  if(!atendList.length){showToast('Nenhum atendimento para fechar.',true);return;}
+  const dt=new Date(atDataAtual+'T12:00:00');
+  const dataFmt=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const total=atendList.reduce((s,a)=>s+atCalcTotal(a),0);
+  if(!confirm(`Fechar o dia ${dataFmt}?\n\n${atendList.length} paciente(s) · ${atFmt(total)}\n\nUm relatório PDF será gerado.`))return;
+  await atLoadFromSheets();
+  atGerarPDF();
+  showToast('✅ Dia fechado! PDF gerado.');
+}
+
+function atGerarPDF(){
+  if(!atendList.length)return;
+  const dt=new Date(atDataAtual+'T12:00:00');
+  const dataStr=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const totalGeral=atendList.reduce((s,a)=>s+atCalcTotal(a),0);
+  const tiposLabel={primeira:'Primeira Consulta',nova:'Nova Consulta',retorno:'Retorno'};
+  const pgtoLabels={dinheiro:'💵 Dinheiro',pix:'📲 Pix',credito:'💳 Crédito',debito:'💳 Débito',cheque:'📄 Cheque'};
+  const porTipo={primeira:0,nova:0,retorno:0};
+  const procCount={};
+  const pgtoCount={};
+  atendList.forEach(a=>{
+    if(porTipo[a.tipo]!==undefined)porTipo[a.tipo]++;
+    a.procs.forEach(p=>{const inf=ATEND_PROCS.find(pr=>pr.id===p.tipo);const lbl=inf?inf.label:p.tipo;if(!procCount[lbl])procCount[lbl]={qtd:0,total:0};procCount[lbl].qtd++;procCount[lbl].total+=p.valor||0;});
+    const m=a.pgto.modo;
+    if(m&&m!=='duas')pgtoCount[m]=(pgtoCount[m]||0)+1;
+    if(m==='duas'){if(a.pgto.tipo1)pgtoCount[a.pgto.tipo1]=(pgtoCount[a.pgto.tipo1]||0)+1;if(a.pgto.tipo2)pgtoCount[a.pgto.tipo2]=(pgtoCount[a.pgto.tipo2]||0)+1;}
+  });
+  const linhasPac=atendList.map((a,i)=>{const ps=a.procs.length?(a.procs.map(p=>{const inf=ATEND_PROCS.find(pr=>pr.id===p.tipo);return inf?inf.label:'?';}).join(', ')):'Apenas consulta';return`<tr style="background:${i%2===0?'#fff':'#f7faf8'}"><td style="padding:6px 10px;font-size:12px;font-weight:600">${a.nome||'—'}</td><td style="padding:6px 10px;font-size:12px;color:#666">${tiposLabel[a.tipo]||'—'}</td><td style="padding:6px 10px;font-size:12px;color:#666">${ps}</td><td style="padding:6px 10px;font-size:12px;color:#666">${atPgtoLabel(a)}</td><td style="padding:6px 10px;text-align:right;font-weight:700;color:#496750;font-size:13px">${atFmt(atCalcTotal(a))}</td></tr>`;}).join('');
+  const linhasProcs=Object.entries(procCount).map(([l,v])=>`<tr><td style="padding:5px 10px;font-size:12px">${l}</td><td style="padding:5px 10px;text-align:center;font-size:12px">${v.qtd}x</td><td style="padding:5px 10px;text-align:right;font-weight:600;color:#496750;font-size:12px">${atFmt(v.total)}</td></tr>`).join('');
+  const linhasPgto=Object.entries(pgtoCount).filter(([,v])=>v>0).map(([k,v])=>`<tr><td style="padding:4px 10px;font-size:12px">${pgtoLabels[k]||k}</td><td style="padding:4px 10px;text-align:center;font-size:12px;color:#666">${v} atend.</td></tr>`).join('');
+  const agora=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Fechamento — ${dataStr}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,Arial,sans-serif;padding:32px 40px;max-width:740px;margin:0 auto;color:#222}.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px}.cv{font-size:26px;color:#496750;font-weight:900;letter-spacing:-4px}.badge{display:inline-block;background:#496750;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;margin-bottom:4px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.kpi{background:#f7faf8;border:1.5px solid #DBE7DC;border-radius:10px;padding:12px 14px}.kpi.d{background:#496750;border-color:#496750}.kpi-l{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5B9776;font-weight:700;margin-bottom:5px}.kpi.d .kpi-l{color:rgba(255,255,255,.75)}.kpi-v{font-size:18px;font-weight:700;color:#496750}.kpi.d .kpi-v{color:#fff;font-size:20px}h3{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B9776;margin:16px 0 8px;padding-bottom:5px;border-bottom:1.5px solid #DBE7DC}.rg{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}.rb{background:#f7faf8;border:1px solid #DBE7DC;border-radius:8px;padding:12px 14px}.rb h4{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#5B9776;font-weight:700;margin-bottom:8px}table{width:100%;border-collapse:collapse;border:1px solid #eee}th{background:#f0f5f1;padding:7px 10px;font-size:10px;text-align:left;color:#496750;text-transform:uppercase;letter-spacing:.5px}.ass{margin-top:28px;border-top:1.5px solid #DBE7DC;padding-top:16px;display:flex;justify-content:flex-end}.ass-l{border-top:1px solid #333;width:200px;text-align:center;padding-top:6px;font-size:11px;color:#666}.ftr{margin-top:16px;display:flex;justify-content:space-between;font-size:10px;color:#aaa}.bp{display:block;margin:16px auto 0;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}@media print{.bp{display:none}body{padding:16px}}</style></head><body>
+  <div class="hdr"><div style="display:flex;align-items:center;gap:10px"><span class="cv">>></span><div><div style="font-size:17px;font-weight:700;color:#496750">Dr. Marcelo Tostes</div><div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase">Ortopedia · Cirurgia do Joelho / Esporte</div></div></div><div style="text-align:right;font-size:11px;color:#888;line-height:1.9"><span class="badge">✅ Fechamento do Dia</span><br><strong>${dataStr}</strong><br>Emitido às ${agora} · CRM-SP 120.317</div></div>
+  <div class="kpis"><div class="kpi d"><div class="kpi-l">Faturamento Total</div><div class="kpi-v">${atFmt(totalGeral)}</div></div><div class="kpi"><div class="kpi-l">Pacientes</div><div class="kpi-v" style="color:#5b8fe8">${atendList.length}</div></div><div class="kpi"><div class="kpi-l">Ticket Médio</div><div class="kpi-v">${atFmt(atendList.length?totalGeral/atendList.length:0)}</div></div><div class="kpi"><div class="kpi-l">Procedimentos</div><div class="kpi-v" style="color:#e8973a">${Object.values(procCount).reduce((s,v)=>s+v.qtd,0)}</div></div></div>
+  <div class="rg"><div class="rb"><h4>Tipos de Consulta</h4><table><tbody>${porTipo.primeira>0?`<tr><td style="padding:4px 8px;font-size:12px">🆕 Primeira Consulta</td><td style="padding:4px 8px;text-align:right;font-weight:700">${porTipo.primeira}</td></tr>`:''}${porTipo.nova>0?`<tr><td style="padding:4px 8px;font-size:12px">📋 Nova Consulta</td><td style="padding:4px 8px;text-align:right;font-weight:700">${porTipo.nova}</td></tr>`:''}${porTipo.retorno>0?`<tr><td style="padding:4px 8px;font-size:12px">🔄 Retorno</td><td style="padding:4px 8px;text-align:right;font-weight:700">${porTipo.retorno}</td></tr>`:''}</tbody></table></div><div class="rb"><h4>Formas de Pagamento</h4><table><tbody>${linhasPgto||'<tr><td style="padding:4px 8px;font-size:12px;color:#999">Não informado</td></tr>'}</tbody></table></div></div>
+  ${linhasProcs?`<h3>Procedimentos Realizados</h3><table><thead><tr><th>Procedimento</th><th style="text-align:center">Qtd</th><th style="text-align:right">Total</th></tr></thead><tbody>${linhasProcs}</tbody></table>`:''}
+  <h3>Atendimentos do Dia</h3>
+  <table><thead><tr><th>Paciente</th><th>Tipo</th><th>Procedimentos</th><th>Pagamento</th><th style="text-align:right">Valor</th></tr></thead><tbody>${linhasPac}</tbody><tfoot><tr style="background:#f0f5f1"><td colspan="4" style="padding:8px 10px;font-weight:700;font-size:13px">TOTAL DO DIA</td><td style="padding:8px 10px;text-align:right;font-weight:700;font-size:15px;color:#496750">${atFmt(totalGeral)}</td></tr></tfoot></table>
+  <div class="ass"><div class="ass-l">Dr. Marcelo Tostes · CRM-SP 120.317</div></div>
+  <button class="bp" onclick="window.print()">🖨️ Salvar como PDF (Cmd+P)</button>
+  <div class="ftr"><span>www.drmarcelotostes.com · Ribeirão Preto / São Paulo</span><span>Documento interno · ${dataStr}</span></div>
+  </body></html>`;
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='fechamento_'+atDataAtual+'.html';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 
 function atShowResumo(){
   if(!atendList.length){alert('Nenhum atendimento registrado.');return;}
   const totalGeral=atendList.reduce((s,a)=>s+atCalcTotal(a),0);
-  const now=new Date(),dataStr=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  const dt=new Date(atDataAtual+'T12:00:00');
+  const dataStr=dt.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
   const tiposLabel={primeira:'Primeira Consulta',nova:'Nova Consulta',retorno:'Retorno'};
-  const overlay=document.createElement('div');overlay.className='at-summary-overlay';overlay.id='at-summary-overlay';overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
-  overlay.innerHTML=`<div class="at-summary-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><span style="font-size:18px;font-weight:700">📊 Resumo do Dia</span><button style="background:#1e2535;border:1px solid #2a3347;color:#8b94a8;border-radius:8px;padding:5px 13px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;" onclick="document.getElementById('at-summary-overlay').remove()">✕</button></div>
-    <div style="font-size:12px;color:#8b94a8;margin-bottom:16px">${dataStr}</div>
+  const overlay=document.createElement('div');overlay.className='at-overlay';overlay.id='at-overlay';overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};
+  overlay.innerHTML=`<div class="at-overlay-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"><span style="font-size:18px;font-weight:700">📊 Resumo — ${dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})}</span><button style="background:#1e2535;border:1px solid #2a3347;color:#8b94a8;border-radius:8px;padding:5px 13px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;" onclick="document.getElementById('at-overlay').remove()">✕</button></div>
     ${atendList.map((a,i)=>{const ps=a.procs.length?(a.procs.map(p=>{const inf=ATEND_PROCS.find(pr=>pr.id===p.tipo);return inf?inf.label:'?';}).join(', ')):'Apenas consulta';return`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(42,51,71,.5);gap:12px"><div><div style="font-size:13px;font-weight:600">${i+1}. ${a.nome||'—'}</div><div style="font-size:11px;color:#8b94a8">${tiposLabel[a.tipo]||'—'} · ${ps} · ${atPgtoLabel(a)}</div></div><span style="font-family:'DM Mono',monospace;font-size:13px;color:#81BBA1;font-weight:600;white-space:nowrap">${atFmt(atCalcTotal(a))}</span></div>`;}).join('')}
-    <div style="background:#496750;border-radius:12px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:rgba(255,255,255,.8)">Faturamento Total do Dia</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace">${atFmt(totalGeral)}</div></div>
-    <button class="at-summary-pdf-btn" onclick="atExportResumo()">🖨️ Exportar PDF</button>
+    <div style="background:#496750;border-radius:12px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:rgba(255,255,255,.8)">Faturamento Total</div><div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace">${atFmt(totalGeral)}</div></div>
+    <button class="at-ov-pdf" onclick="atGerarPDF();document.getElementById('at-overlay').remove()">🖨️ Exportar PDF de Fechamento</button>
   </div>`;
   document.body.appendChild(overlay);
-}
-
-function atExportResumo(){
-  const now=new Date(),dataStr=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  const totalGeral=atendList.reduce((s,a)=>s+atCalcTotal(a),0);
-  const tiposLabel={primeira:'Primeira Consulta',nova:'Nova Consulta',retorno:'Retorno'};
-  const rows=atendList.map((a,i)=>{const ps=a.procs.length?(a.procs.map(p=>{const inf=ATEND_PROCS.find(pr=>pr.id===p.tipo);return inf?inf.label:'?';}).join(', ')):'Apenas consulta';return`<tr><td style="padding:6px 10px;font-size:13px">${i+1}. ${a.nome||'—'}</td><td style="padding:6px 10px;font-size:12px;color:#666">${tiposLabel[a.tipo]||'—'}</td><td style="padding:6px 10px;font-size:12px;color:#666">${ps}</td><td style="padding:6px 10px;font-size:12px;color:#666">${atPgtoLabel(a)}</td><td style="padding:6px 10px;text-align:right;font-weight:600;color:#496750">${atFmt(atCalcTotal(a))}</td></tr>`;}).join('');
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Atendimentos ${dataStr}</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,Arial,sans-serif;padding:36px 44px;max-width:720px;margin:0 auto;color:#222}.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px}.cv{font-size:26px;color:#496750;font-weight:900;letter-spacing:-4px}h3{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B9776;margin:18px 0 8px}table{width:100%;border-collapse:collapse;border:1px solid #eee}th{background:#f0f5f1;padding:7px 10px;font-size:11px;text-align:left;color:#496750;text-transform:uppercase}tr:nth-child(even){background:#fafafa}.total-box{background:#496750;border-radius:10px;padding:14px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:20px 0}.bp{display:block;margin:0 auto;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}@media print{.bp{display:none}}</style></head><body>
-  <div class="hdr"><div style="display:flex;align-items:center;gap:10px"><span class="cv">&gt;&gt;</span><div><div style="font-size:17px;font-weight:700;color:#496750">Dr. Marcelo Tostes</div><div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase">Ortopedia · Cirurgia do Joelho / Esporte</div></div></div><div style="text-align:right;font-size:11px;color:#888;line-height:1.8"><strong>ATENDIMENTOS DO DIA</strong><br>${dataStr}<br>CRM-SP 120.317</div></div>
-  <table><thead><tr><th>Paciente</th><th>Tipo</th><th>Procedimentos</th><th>Pagamento</th><th style="text-align:right">Valor</th></tr></thead><tbody>${rows}</tbody></table>
-  <div class="total-box"><div style="font-size:12px;opacity:.8">Faturamento Total do Dia</div><div style="font-size:22px;font-weight:700">${atFmt(totalGeral)}</div></div>
-  <button class="bp" onclick="window.print()">🖨️ Salvar como PDF</button>
-  </body></html>`;
-  const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='atendimentos_'+now.toLocaleDateString('pt-BR').replace(/\//g,'-')+'.html';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(url),1000);
-  document.getElementById('at-summary-overlay')?.remove();
 }
 
 // ══════════════════════════════════════
@@ -888,16 +800,15 @@ function contabGetDias(){return contabDados[contabKey()]||[];}
 
 async function cbLoadFromSheets(){
   syncStart('cb-sync-icon');
-  try {
+  try{
     const res=await apiGet('contabilidade');if(res.error)throw new Error(res.error);
     contabDados={};
     (res.rows||[]).forEach(r=>{const dt=new Date(r.data+'T12:00:00');const k=dt.getFullYear()+'-'+dt.getMonth();if(!contabDados[k])contabDados[k]=[];contabDados[k].push({id:r.id,data:r.data,pacientes:parseInt(r.pacientes)||0,faturamento:parseFloat(r.faturamento)||0,procs:{visco:parseInt(r.visco)||0,artro:parseInt(r.artro)||0,infil:parseInt(r.infil)||0},pgto:r.pgto||''});});
     Object.keys(contabDados).forEach(k=>contabDados[k].sort((a,b)=>a.data.localeCompare(b.data)));
     contabRenderAll();showToast('✅ Contabilidade sincronizada!');
-  } catch(e){showToast('Erro: '+e.message,true);}
+  }catch(e){showToast('Erro: '+e.message,true);}
   syncEnd('cb-sync-icon');
 }
-
 async function cbSaveEntry(entry){const res=await apiSave('contabilidade',{id:entry.id,data:entry.data,pacientes:entry.pacientes,faturamento:entry.faturamento,visco:entry.procs.visco,artro:entry.procs.artro,infil:entry.procs.infil,pgto:entry.pgto||''});if(res.ok){entry.id=res.id;showToast('💾 Dia salvo!');}}
 
 function initContab(){
@@ -957,7 +868,7 @@ function initContab(){
   <div id="cb-tab-proj" style="display:none"></div>
 </div>`;
     cbLoadFromSheets();
-  } else { contabRenderAll(); }
+  }else{cbLoadFromSheets();}
 }
 
 function contabSetTab(t){contabTab=t;['visao','dias','procs','proj'].forEach(id=>{const el=document.getElementById('cb-tab-'+id);if(el)el.style.display=id===t?'block':'none';});document.querySelectorAll('.cb-tab').forEach((b,i)=>{b.classList.toggle('active',['visao','dias','procs','proj'][i]===t);});contabRenderAll();}
@@ -971,31 +882,12 @@ function contabRenderVisao(){
   const tProcs=dias.reduce((s,d)=>s+(d.procs.visco||0)+(d.procs.artro||0)+(d.procs.infil||0),0);
   const maxF=Math.max(...dias.map(d=>d.faturamento),1);
   const barsHTML=dias.length?dias.map(d=>{const pct=(d.faturamento/maxF*100).toFixed(1);const cor=d.faturamento>10000?'#496750':d.faturamento>5000?'#5B9776':'#81BBA1';return`<div class="cb-bar-col"><div class="cb-bar" style="height:${pct}%;background:${cor}" title="${cFmtDataLong(d.data)}: ${cFmt(d.faturamento)}"></div><div class="cb-bar-lbl">${cFmtData(d.data)}</div></div>`;}).join(''):'<div style="color:#8b94a8;font-size:12px;text-align:center;width:100%;padding-top:40px">Sem dados</div>';
-  el.innerHTML=`<div class="cb-kpis">
-    <div class="cb-kpi accent"><div class="cb-kpi-lbl">Faturamento Total</div><div class="cb-kpi-val">${cFmt(tFat)}</div><div class="cb-kpi-sub">${dt} dias trabalhados</div></div>
-    <div class="cb-kpi"><div class="cb-kpi-lbl">Pacientes</div><div class="cb-kpi-val" style="color:#5b8fe8">${tPac}</div><div class="cb-kpi-sub">Ticket médio: ${cFmt(tPac?tFat/tPac:0)}</div></div>
-    <div class="cb-kpi"><div class="cb-kpi-lbl">Média por Dia</div><div class="cb-kpi-val" style="color:#5b8fe8">${cFmt(dt?tFat/dt:0)}</div></div>
-    <div class="cb-kpi"><div class="cb-kpi-lbl">Procedimentos</div><div class="cb-kpi-val" style="color:#e8b84b">${tProcs}</div></div>
-  </div>
-  <div class="cb-chart-grid">
-    <div class="cb-card"><div class="cb-sec">Faturamento por Dia</div><div class="cb-bars">${barsHTML}</div></div>
-    <div class="cb-card"><div class="cb-sec">Lançar Dia Manualmente</div>
-      <div class="cb-man-grid">
-        <div class="cb-field"><label>Data</label><input type="date" id="cb-m-data"></div>
-        <div class="cb-field"><label>Pacientes</label><input type="number" id="cb-m-pac" placeholder="0" min="0"></div>
-        <div class="cb-field"><label>Faturamento (R$)</label><input type="number" id="cb-m-fat" placeholder="0,00" min="0"></div>
-        <button class="cb-add-btn" onclick="contabAddManual()">＋</button>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-        <div class="cb-field" style="flex:1;min-width:80px"><label>Visco</label><input type="number" id="cb-m-visco" placeholder="0" min="0"></div>
-        <div class="cb-field" style="flex:1;min-width:80px"><label>Artrocent.</label><input type="number" id="cb-m-artro" placeholder="0" min="0"></div>
-        <div class="cb-field" style="flex:1;min-width:80px"><label>Infiltr.</label><input type="number" id="cb-m-infil" placeholder="0" min="0"></div>
-        <div class="cb-field" style="flex:1;min-width:120px"><label>Pagamento</label>
-          <select id="cb-m-pgto"><option value="">—</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="credito">Crédito</option><option value="debito">Débito</option><option value="cheque">Cheque</option></select>
-        </div>
-      </div>
-    </div>
-  </div>`;
+  el.innerHTML=`<div class="cb-kpis"><div class="cb-kpi accent"><div class="cb-kpi-lbl">Faturamento Total</div><div class="cb-kpi-val">${cFmt(tFat)}</div><div class="cb-kpi-sub">${dt} dias trabalhados</div></div><div class="cb-kpi"><div class="cb-kpi-lbl">Pacientes</div><div class="cb-kpi-val" style="color:#5b8fe8">${tPac}</div><div class="cb-kpi-sub">Ticket médio: ${cFmt(tPac?tFat/tPac:0)}</div></div><div class="cb-kpi"><div class="cb-kpi-lbl">Média por Dia</div><div class="cb-kpi-val" style="color:#5b8fe8">${cFmt(dt?tFat/dt:0)}</div></div><div class="cb-kpi"><div class="cb-kpi-lbl">Procedimentos</div><div class="cb-kpi-val" style="color:#e8b84b">${tProcs}</div></div></div>
+  <div class="cb-chart-grid"><div class="cb-card"><div class="cb-sec">Faturamento por Dia</div><div class="cb-bars">${barsHTML}</div></div>
+  <div class="cb-card"><div class="cb-sec">Lançar Dia Manualmente</div>
+    <div class="cb-man-grid"><div class="cb-field"><label>Data</label><input type="date" id="cb-m-data" style="color-scheme:dark"></div><div class="cb-field"><label>Pacientes</label><input type="number" id="cb-m-pac" placeholder="0" min="0"></div><div class="cb-field"><label>Faturamento (R$)</label><input type="number" id="cb-m-fat" placeholder="0,00" min="0"></div><button class="cb-add-btn" onclick="contabAddManual()">＋</button></div>
+    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap"><div class="cb-field" style="flex:1;min-width:80px"><label>Visco</label><input type="number" id="cb-m-visco" placeholder="0" min="0"></div><div class="cb-field" style="flex:1;min-width:80px"><label>Artrocent.</label><input type="number" id="cb-m-artro" placeholder="0" min="0"></div><div class="cb-field" style="flex:1;min-width:80px"><label>Infiltr.</label><input type="number" id="cb-m-infil" placeholder="0" min="0"></div><div class="cb-field" style="flex:1;min-width:120px"><label>Pagamento</label><select id="cb-m-pgto"><option value="">—</option><option value="dinheiro">Dinheiro</option><option value="pix">Pix</option><option value="credito">Crédito</option><option value="debito">Débito</option><option value="cheque">Cheque</option></select></div></div>
+  </div></div>`;
 }
 
 function contabRenderDias(){
@@ -1005,12 +897,10 @@ function contabRenderDias(){
   const tFat=dias.reduce((s,d)=>s+d.faturamento,0),tPac=dias.reduce((s,d)=>s+d.pacientes,0);
   const tV=dias.reduce((s,d)=>s+(d.procs.visco||0),0),tA=dias.reduce((s,d)=>s+(d.procs.artro||0),0),tI=dias.reduce((s,d)=>s+(d.procs.infil||0),0);
   const pgL={dinheiro:'💵 Dinheiro',pix:'📲 Pix',credito:'💳 Crédito',debito:'💳 Débito',cheque:'📄 Cheque'};
-  el.innerHTML=`<div class="cb-card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="cb-sec" style="margin:0">Registros do Mês</div><button onclick="contabExportCSV()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1px solid #2a3347;background:#1e2535;color:#8b94a8;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;">⬇ CSV</button></div>
-    <table class="cb-table"><thead><tr><th>Data</th><th class="r">Pac.</th><th class="r">Faturamento</th><th class="r">Visco</th><th class="r">Artrocent.</th><th class="r">Infiltr.</th><th>Pgto</th><th></th></tr></thead>
-    <tbody>${dias.map(d=>`<tr><td style="font-family:'DM Mono',monospace;font-size:12px">${cFmtDataLong(d.data)}</td><td class="r">${d.pacientes}</td><td class="r">${cFmt(d.faturamento)}</td><td class="r">${d.procs.visco||0}</td><td class="r">${d.procs.artro||0}</td><td class="r">${d.procs.infil||0}</td><td style="font-size:12px">${pgL[d.pgto]||d.pgto||'—'}</td><td><button class="cb-del" onclick="contabDelDia('${d.data}','${d.id||''}')">✕</button></td></tr>`).join('')}</tbody>
-    <tfoot><tr><td><strong>TOTAL</strong></td><td class="r"><strong>${tPac}</strong></td><td class="r"><strong>${cFmt(tFat)}</strong></td><td class="r"><strong>${tV}</strong></td><td class="r"><strong>${tA}</strong></td><td class="r"><strong>${tI}</strong></td><td colspan="2"></td></tr></tfoot>
-    </table></div>`;
+  el.innerHTML=`<div class="cb-card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="cb-sec" style="margin:0">Registros do Mês</div><button onclick="contabExportCSV()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1px solid #2a3347;background:#1e2535;color:#8b94a8;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;">⬇ CSV</button></div>
+  <table class="cb-table"><thead><tr><th>Data</th><th class="r">Pac.</th><th class="r">Faturamento</th><th class="r">Visco</th><th class="r">Artrocent.</th><th class="r">Infiltr.</th><th>Pgto</th><th></th></tr></thead>
+  <tbody>${dias.map(d=>`<tr><td style="font-family:'DM Mono',monospace;font-size:12px">${cFmtDataLong(d.data)}</td><td class="r">${d.pacientes}</td><td class="r">${cFmt(d.faturamento)}</td><td class="r">${d.procs.visco||0}</td><td class="r">${d.procs.artro||0}</td><td class="r">${d.procs.infil||0}</td><td style="font-size:12px">${pgL[d.pgto]||d.pgto||'—'}</td><td><button class="cb-del" onclick="contabDelDia('${d.data}','${d.id||''}')">✕</button></td></tr>`).join('')}</tbody>
+  <tfoot><tr><td><strong>TOTAL</strong></td><td class="r"><strong>${tPac}</strong></td><td class="r"><strong>${cFmt(tFat)}</strong></td><td class="r"><strong>${tV}</strong></td><td class="r"><strong>${tA}</strong></td><td class="r"><strong>${tI}</strong></td><td colspan="2"></td></tr></tfoot></table></div>`;
 }
 
 function contabRenderProcs(){
@@ -1018,9 +908,7 @@ function contabRenderProcs(){
   const dias=contabGetDias();
   const visco=dias.reduce((s,d)=>s+(d.procs.visco||0),0),artro=dias.reduce((s,d)=>s+(d.procs.artro||0),0),infil=dias.reduce((s,d)=>s+(d.procs.infil||0),0),total=visco+artro+infil;
   const list=[{l:'Viscosuplementação',icon:'💉',qtd:visco,vunit:2100,cor:'#81BBA1'},{l:'Artrocentese',icon:'🔬',qtd:artro,vunit:200,cor:'#5b8fe8'},{l:'Infiltração Triancil',icon:'💊',qtd:infil,vunit:600,cor:'#e8b84b'}];
-  el.innerHTML=`<div class="cb-card"><div class="cb-sec">Procedimentos do Mês</div>
-  ${!total?'<div class="cb-empty">🔬 Nenhum procedimento registrado</div>':list.map(p=>{const pct=total?Math.round(p.qtd/total*100):0;return`<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(42,51,71,.4)"><span style="font-size:26px">${p.icon}</span><div style="flex:1"><div style="font-weight:600;font-size:13px;margin-bottom:6px">${p.l}</div><div style="background:#2a3347;border-radius:20px;height:7px;overflow:hidden"><div style="height:7px;border-radius:20px;background:${p.cor};width:${pct}%"></div></div></div><div style="text-align:right;min-width:50px"><div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:${p.cor}">${p.qtd}</div><div style="font-size:10px;color:#8b94a8">realizados</div></div><div style="text-align:right;min-width:100px"><div style="font-family:'DM Mono',monospace;font-size:13px">${cFmt(p.qtd*p.vunit)}</div><div style="font-size:10px;color:#8b94a8">rec. estimada</div></div></div>`;}).join('')}
-  ${total?`<div style="display:flex;justify-content:space-between;padding-top:12px"><strong>Total</strong><strong style="font-family:'DM Mono',monospace;color:#81BBA1">${total} · ${cFmt(list.reduce((s,p)=>s+p.qtd*p.vunit,0))}</strong></div>`:''}</div>`;
+  el.innerHTML=`<div class="cb-card"><div class="cb-sec">Procedimentos do Mês</div>${!total?'<div class="cb-empty">🔬 Nenhum procedimento registrado</div>':list.map(p=>{const pct=total?Math.round(p.qtd/total*100):0;return`<div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(42,51,71,.4)"><span style="font-size:26px">${p.icon}</span><div style="flex:1"><div style="font-weight:600;font-size:13px;margin-bottom:6px">${p.l}</div><div style="background:#2a3347;border-radius:20px;height:7px;overflow:hidden"><div style="height:7px;border-radius:20px;background:${p.cor};width:${pct}%"></div></div></div><div style="text-align:right;min-width:50px"><div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:${p.cor}">${p.qtd}</div><div style="font-size:10px;color:#8b94a8">realizados</div></div><div style="text-align:right;min-width:100px"><div style="font-family:'DM Mono',monospace;font-size:13px">${cFmt(p.qtd*p.vunit)}</div><div style="font-size:10px;color:#8b94a8">rec. estimada</div></div></div>`;}).join('')}${total?`<div style="display:flex;justify-content:space-between;padding-top:12px"><strong>Total</strong><strong style="font-family:'DM Mono',monospace;color:#81BBA1">${total} · ${cFmt(list.reduce((s,p)=>s+p.qtd*p.vunit,0))}</strong></div>`:''}</div>`;
 }
 
 function contabRenderProj(){
@@ -1035,16 +923,9 @@ function contabRenderProj(){
   const projecao=mesAtual?tFat+(mediaDia*diasRestantes):tFat;
   const meta=50000,pct=Math.min(100,tFat/meta*100);
   el.innerHTML=`<div class="cb-card"><div class="cb-sec">Projeção — ${contabMesesNomes[contabMes]} ${contabAno}</div>
-  <div class="cb-proj-grid">
-    <div class="cb-proj"><div class="cb-proj-lbl">Realizado</div><div class="cb-proj-val">${cFmt(tFat)}</div></div>
-    ${mesAtual?`<div class="cb-proj"><div class="cb-proj-lbl">Projeção Final</div><div class="cb-proj-val" style="color:#e8b84b">${cFmt(projecao)}</div><div style="font-size:11px;color:#8b94a8;margin-top:4px">${diasRestantes} dias úteis restantes</div></div>`:''}
-    <div class="cb-proj"><div class="cb-proj-lbl">Média/Dia</div><div class="cb-proj-val" style="color:#5b8fe8">${cFmt(mediaDia)}</div></div>
-  </div>
+  <div class="cb-proj-grid"><div class="cb-proj"><div class="cb-proj-lbl">Realizado</div><div class="cb-proj-val">${cFmt(tFat)}</div></div>${mesAtual?`<div class="cb-proj"><div class="cb-proj-lbl">Projeção Final</div><div class="cb-proj-val" style="color:#e8b84b">${cFmt(projecao)}</div><div style="font-size:11px;color:#8b94a8;margin-top:4px">${diasRestantes} dias úteis restantes</div></div>`:''}<div class="cb-proj"><div class="cb-proj-lbl">Média/Dia</div><div class="cb-proj-val" style="color:#5b8fe8">${cFmt(mediaDia)}</div></div></div>
   <div class="cb-sec">Meta Mensal</div>
-  <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
-    <div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:11px;color:#8b94a8">${cFmt(tFat)}</span><span style="font-size:11px;color:#8b94a8">${cFmt(meta)}</span></div><div style="background:#2a3347;border-radius:20px;height:12px;overflow:hidden"><div style="height:12px;border-radius:20px;background:${pct>=100?'#81BBA1':pct>=70?'#e8b84b':'#e05252'};width:${pct}%"></div></div></div>
-    <span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:${pct>=100?'#81BBA1':pct>=70?'#e8b84b':'#e05252'}">${pct.toFixed(1)}%</span>
-  </div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px"><div style="flex:1"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:11px;color:#8b94a8">${cFmt(tFat)}</span><span style="font-size:11px;color:#8b94a8">${cFmt(meta)}</span></div><div style="background:#2a3347;border-radius:20px;height:12px;overflow:hidden"><div style="height:12px;border-radius:20px;background:${pct>=100?'#81BBA1':pct>=70?'#e8b84b':'#e05252'};width:${pct}%"></div></div></div><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:${pct>=100?'#81BBA1':pct>=70?'#e8b84b':'#e05252'}">${pct.toFixed(1)}%</span></div>
   <div style="font-size:11px;color:#8b94a8">${pct>=100?'✅ Meta atingida!':'Faltam '+cFmt(meta-tFat)+' para a meta de '+cFmt(meta)}</div></div>`;
 }
 
@@ -1072,9 +953,7 @@ async function contabDelDia(data,id){
   if(!confirm('Remover registro de '+cFmtData(data)+'?'))return;
   const k=contabKey();
   contabDados[k]=(contabDados[k]||[]).filter(e=>e.data!==data);
-  contabRenderAll();
-  await apiDeleteDay(data);
-  showToast('🗑️ Removido!');
+  contabRenderAll();await apiDeleteDay(data);showToast('🗑️ Removido!');
 }
 
 function contabExportCSV(){
