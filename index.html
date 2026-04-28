@@ -521,7 +521,7 @@ const atFmt=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).
 const atToday=()=>new Date().toISOString().split('T')[0];
 
 function initAtend(){
-  if(atendInited){atLoadFromSheets();return;}
+  if(atendInited){return;} // não recarrega ao voltar para o módulo
   atendInited=true;
   atDataAtual=atToday();
   document.getElementById('atend-body').innerHTML=atBodyHTML();
@@ -628,11 +628,10 @@ function atIrParaData(data){
 async function atLoadFromSheets(){
   syncStart('at-sync-icon');
   try{
-    const res=await apiGet('atendimentos');if(res.error)throw new Error(res.error);
-    // só recarrega se não houver itens não salvos na tela
-    const temNaoSalvo=atendList.some(a=>!a.salvo);
-    if(temNaoSalvo){syncEnd('at-sync-icon');showToast('⚠️ Salve os atendimentos antes de sincronizar.',true);return;}
-    atendList=(res.rows||[]).filter(r=>r.data===atDataAtual).map(r=>({
+    const res=await apiGet('atendimentos');
+    if(res.error)throw new Error(res.error);
+    // pega os do Sheets para essa data
+    const doSheets=(res.rows||[]).filter(r=>r.data===atDataAtual).map(r=>({
       id:r.id,data:r.data,nome:r.nome||'',tipo:r.tipo||'',
       consulta_valor:parseFloat(r.consulta_valor)||700,
       consulta_nf:r.consulta_nf==='TRUE'||r.consulta_nf===true||r.consulta_nf==='true',
@@ -640,7 +639,14 @@ async function atLoadFromSheets(){
       procs:Array.isArray(r.procs)?r.procs:(r.procs?JSON.parse(r.procs):[]),
       salvo:true
     }));
-    atRenderAll();showToast('✅ Carregado!');
+    // mantém os que estão na tela mas ainda não foram salvos no Sheets
+    const naoSalvos=atendList.filter(a=>!a.salvo||a.id.startsWith('local-'));
+    // junta: do Sheets + não salvos locais (sem duplicar)
+    const idsSheets=doSheets.map(a=>a.id);
+    const locaisSemDuplicata=naoSalvos.filter(a=>!idsSheets.includes(a.id));
+    atendList=[...doSheets,...locaisSemDuplicata];
+    atRenderAll();
+    showToast('✅ Carregado!');
   }catch(e){showToast('Erro: '+e.message,true);}
   syncEnd('at-sync-icon');
 }
