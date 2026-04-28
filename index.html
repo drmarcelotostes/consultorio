@@ -407,6 +407,7 @@ var atDataAtual='';
 var ATEND_TIPOS=[{id:'primeira',label:'Primeira Consulta',icon:'🆕',cobra:true},{id:'nova',label:'Nova Consulta',icon:'📋',cobra:true},{id:'retorno',label:'Retorno',icon:'🔄',cobra:false}];
 var ATEND_PROCS=[{id:'viscokd',label:'Viscosuplementação KD',icon:'💉',valorBase:2100},{id:'viscoreviscon',label:'Viscosuplementação Reviscon',icon:'💉',valorBase:2100},{id:'artrocentese',label:'Artrocentese',icon:'🔬',valorBase:200},{id:'triancil',label:'Infiltração Triancil',icon:'💊',valorBase:600}];
 var ATEND_PGTO=[{id:'dinheiro',label:'Dinheiro',icon:'💵'},{id:'pix',label:'Pix',icon:'📲'},{id:'credito',label:'Crédito',icon:'💳'},{id:'debito',label:'Débito',icon:'💳'},{id:'cheque',label:'Cheque',icon:'📄'},{id:'duas',label:'Duas Formas',icon:'🔀'}];
+var PGTO_COM_CARTAO=['credito','debito'];
 function atFmt(n){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n||0);}
 function atToday(){return new Date().toISOString().split('T')[0];}
 
@@ -451,7 +452,7 @@ async function atLoadFromSheets(){
 }
 
 async function atSaveToSheets(a){
-  var res=await apiSave('atendimentos',{id:a.id,data:a.data||atDataAtual,nome:a.nome,tipo:a.tipo,consulta_valor:a.consulta_valor,consulta_nf:a.consulta_nf,pgto_modo:a.pgto.modo,pgto_tipo1:a.pgto.tipo1,pgto_tipo2:a.pgto.tipo2,pgto_parcelas1:a.pgto.parcelas1,pgto_parcelas2:a.pgto.parcelas2,pgto_valor1:a.pgto.valor1,pgto_valor2:a.pgto.valor2,procs:JSON.stringify(a.procs||[])});
+  var res=await apiSave('atendimentos',{id:a.id,data:a.data||atDataAtual,nome:a.nome,tipo:a.tipo,consulta_valor:a.consulta_valor,consulta_nf:a.consulta_nf,pgto_modo:a.pgto.modo,pgto_tipo1:a.pgto.tipo1,pgto_tipo2:a.pgto.tipo2,pgto_parcelas1:a.pgto.parcelas1,pgto_parcelas2:a.pgto.parcelas2,pgto_valor1:a.pgto.valor1,pgto_valor2:a.pgto.valor2,pgto_ultimos1:a.pgto.ultimos1||'',pgto_ultimos2:a.pgto.ultimos2||'',procs:JSON.stringify(a.procs||[])});
   if(res.ok)a.id=res.id;
 }
 
@@ -542,25 +543,33 @@ function atIrParaData(data){if(!data)return;atDataAtual=data;atUpdDataSub();atCa
 
 function atGet(id){return atendList.find(function(a){return a.id===id;});}
 function atCalcTotal(a){var ti=ATEND_TIPOS.find(function(t){return t.id===a.tipo;});var c=!ti||ti.cobra!==false;var t=c?(a.consulta_valor||0):0;(a.procs||[]).forEach(function(p){t+=p.valor||0;});return t;}
-function atPgtoLabel(a){var pg=a.pgto;if(!pg||!pg.modo)return'—';if(pg.modo==='duas')return atFmt(pg.valor1||0)+' '+atPgtoItemLabel(pg.tipo1,pg.parcelas1)+' + '+atFmt(pg.valor2||0)+' '+atPgtoItemLabel(pg.tipo2,pg.parcelas2);return atPgtoItemLabel(pg.modo,pg.parcelas1);}
-function atPgtoItemLabel(tipo,parc){var m={dinheiro:'Dinheiro',pix:'Pix',credito:'Crédito',debito:'Débito',cheque:'Cheque'};var l=m[tipo]||tipo;if(tipo==='credito'&&parc>1)l+=' '+parc+'x';return l;}
+function atPgtoLabel(a){var pg=a.pgto;if(!pg||!pg.modo)return'—';if(pg.modo==='duas')return atFmt(pg.valor1||0)+' '+atPgtoItemLabel(pg.tipo1,pg.parcelas1,pg.ultimos1)+' + '+atFmt(pg.valor2||0)+' '+atPgtoItemLabel(pg.tipo2,pg.parcelas2,pg.ultimos2);return atPgtoItemLabel(pg.modo,pg.parcelas1,pg.ultimos1);}
+function atPgtoItemLabel(tipo,parc,ultimos){var m={dinheiro:'Dinheiro',pix:'Pix',credito:'Crédito',debito:'Débito',cheque:'Cheque'};var l=m[tipo]||tipo;if(tipo==='credito'&&parc>1)l+=' '+parc+'x';if(ultimos)l+=' ****'+ultimos;return l;}
 
 function atPgtoHTML(a){
   var pg=a.pgto;
   var chips=ATEND_PGTO.map(function(t){return'<button class="at-chip'+(pg.modo===t.id?' sel':'')+'" onclick="atUpdPgto(\''+a.id+'\',\'modo\',\''+t.id+'\')">'+t.icon+' '+t.label+'</button>';}).join('');
   var extra='';
+  var campoUltimos='<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:#8b94a8;">**** **** ****</span><input type="text" maxlength="4" pattern="[0-9]{4}" value="'+(pg.ultimos1||'')+'" placeholder="0000" oninput="atUpdPgto(\''+a.id+'\',\'ultimos1\',this.value.replace(/\\D/g,\'\').slice(0,4))" style="width:60px;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:6px 10px;font-size:14px;font-family:DM Mono,monospace;outline:none;letter-spacing:2px;text-align:center;"><span style="font-size:11px;color:#8b94a8;">4 últimos dígitos</span></div>';
   if(pg.modo==='credito'){
     extra='<div style="margin-top:10px;display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:#8b94a8">Parcelas:</span><select onchange="atUpdPgto(\''+a.id+'\',\'parcelas1\',parseInt(this.value))" style="background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:5px 8px;font-size:12px;font-family:DM Sans,sans-serif;outline:none;width:70px">'
-    +[1,2,3,4,5,6,7,8,9,10,11,12].map(function(n){return'<option value="'+n+'"'+(pg.parcelas1===n?' selected':'')+'>'+n+'x</option>';}).join('')+'</select></div>';
+    +[1,2,3,4,5,6,7,8,9,10,11,12].map(function(n){return'<option value="'+n+'"'+(pg.parcelas1===n?' selected':'')+'>'+n+'x</option>';}).join('')+'</select></div>'
+    +campoUltimos;
+  } else if(pg.modo==='debito'){
+    extra=campoUltimos;
   } else if(pg.modo==='duas'){
     var tipos2=ATEND_PGTO.filter(function(t){return t.id!=='duas';});
+    var ultimosF1=PGTO_COM_CARTAO.indexOf(pg.tipo1)>=0?'<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:#8b94a8;">**** ****</span><input type="text" maxlength="4" value="'+(pg.ultimos1||'')+'" placeholder="0000" oninput="atUpdPgto(\''+a.id+'\',\'ultimos1\',this.value.replace(/\\D/g,\'\').slice(0,4))" style="width:60px;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:6px 10px;font-size:14px;font-family:DM Mono,monospace;outline:none;letter-spacing:2px;text-align:center;"><span style="font-size:11px;color:#8b94a8;">4 últimos</span></div>':'';
+    var ultimosF2=PGTO_COM_CARTAO.indexOf(pg.tipo2)>=0?'<div style="margin-top:8px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:#8b94a8;">**** ****</span><input type="text" maxlength="4" value="'+(pg.ultimos2||'')+'" placeholder="0000" oninput="atUpdPgto(\''+a.id+'\',\'ultimos2\',this.value.replace(/\\D/g,\'\').slice(0,4))" style="width:60px;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:6px 10px;font-size:14px;font-family:DM Mono,monospace;outline:none;letter-spacing:2px;text-align:center;"><span style="font-size:11px;color:#8b94a8;">4 últimos</span></div>':'';
     extra='<div class="at-split-grid">'
     +'<div class="at-split-section"><div class="at-split-lbl">Forma 1</div>'
     +'<div class="at-field" style="margin-bottom:8px"><label>Valor (R$)</label><input type="number" value="'+(pg.valor1||0)+'" oninput="atSyncValor(\''+a.id+'\',1,this.value)" style="width:120px;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;outline:none;"></div>'
-    +'<div class="at-chips">'+tipos2.map(function(t){return'<button class="at-chip'+(pg.tipo1===t.id?' sel':'')+'" onclick="atUpdPgto(\''+a.id+'\',\'tipo1\',\''+t.id+'\')" style="font-size:11px;padding:4px 9px">'+t.icon+' '+t.label+'</button>';}).join('')+'</div></div>'
+    +'<div class="at-chips">'+tipos2.map(function(t){return'<button class="at-chip'+(pg.tipo1===t.id?' sel':'')+'" onclick="atUpdPgto(\''+a.id+'\',\'tipo1\',\''+t.id+'\')" style="font-size:11px;padding:4px 9px">'+t.icon+' '+t.label+'</button>';}).join('')+'</div>'
+    +ultimosF1+'</div>'
     +'<div class="at-split-section"><div class="at-split-lbl">Forma 2</div>'
     +'<div class="at-field" style="margin-bottom:8px"><label>Valor (R$)</label><input type="number" value="'+(pg.valor2||0)+'" oninput="atSyncValor(\''+a.id+'\',2,this.value)" style="width:120px;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;outline:none;"></div>'
-    +'<div class="at-chips">'+tipos2.map(function(t){return'<button class="at-chip'+(pg.tipo2===t.id?' sel':'')+'" onclick="atUpdPgto(\''+a.id+'\',\'tipo2\',\''+t.id+'\')" style="font-size:11px;padding:4px 9px">'+t.icon+' '+t.label+'</button>';}).join('')+'</div></div>'
+    +'<div class="at-chips">'+tipos2.map(function(t){return'<button class="at-chip'+(pg.tipo2===t.id?' sel':'')+'" onclick="atUpdPgto(\''+a.id+'\',\'tipo2\',\''+t.id+'\')" style="font-size:11px;padding:4px 9px">'+t.icon+' '+t.label+'</button>';}).join('')+'</div>'
+    +ultimosF2+'</div>'
     +'</div>';
   }
   return'<div class="at-chips">'+chips+'</div>'+extra;
@@ -644,7 +653,7 @@ async function atSalvar(id){
 }
 function atAddPaciente(){
   var id='local-'+Date.now();
-  atendList.push({id:id,data:atDataAtual,nome:'',tipo:'',consulta_valor:700,consulta_nf:true,pgto:{modo:'',tipo1:'',tipo2:'',parcelas1:1,parcelas2:1,valor1:0,valor2:0},procs:[],salvo:false});
+  atendList.push({id:id,data:atDataAtual,nome:'',tipo:'',consulta_valor:700,consulta_nf:true,pgto:{modo:'',tipo1:'',tipo2:'',parcelas1:1,parcelas2:1,valor1:0,valor2:0,ultimos1:'',ultimos2:''},procs:[],salvo:false});
   atRenderAll();
 }
 function atUpdStats(){
