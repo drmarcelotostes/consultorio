@@ -130,9 +130,8 @@ function goHome(){
   document.getElementById('launcher').classList.remove('hidden');
 }
 
-// Auto-sync apenas Fila e Contabilidade
+// Auto-sync apenas Contabilidade
 setInterval(function(){
-  if(document.getElementById('app-fila').classList.contains('active')&&fcInited)fcLoadFromSheets();
   if(document.getElementById('app-contab').classList.contains('active')&&contabInited)cbLoadFromSheets();
 },60000);
 
@@ -167,12 +166,22 @@ async function fcLoadFromSheets(){
   try{
     var res=await apiGet('fila_cirurgica');
     if(res.error)throw new Error(res.error);
-    DB.ativas=[];DB.futuras=[];
+    // Pega do Sheets
+    var ativas=[], futuras=[];
     (res.rows||[]).forEach(function(r){
       var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas'};
-      if(p.tab==='futuras')DB.futuras.push(p);else DB.ativas.push(p);
+      if(p.tab==='futuras')futuras.push(p);else ativas.push(p);
     });
-    fcRender();showToast('✅ Fila sincronizada!');
+    // IDs que vieram do Sheets
+    var idsSheets=ativas.concat(futuras).map(function(p){return p.id;});
+    // Mantém locais que ainda não foram salvos no Sheets (sem ID ou ID local)
+    var locaisAtivas=DB.ativas.filter(function(p){return!p.id||idsSheets.indexOf(p.id)<0;});
+    var locaisFuturas=DB.futuras.filter(function(p){return!p.id||idsSheets.indexOf(p.id)<0;});
+    // Junta: Sheets + locais não sincronizados
+    DB.ativas=ativas.concat(locaisAtivas);
+    DB.futuras=futuras.concat(locaisFuturas);
+    fcRender();
+    showToast('✅ Fila sincronizada!');
   }catch(e){showToast('Erro: '+e.message,true);}
   syncEnd('fc-sync-icon');
 }
