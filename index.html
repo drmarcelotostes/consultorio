@@ -1,0 +1,1121 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="1671.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Neue'; min-height: 14.0px}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px 'Helvetica Neue'}
+    p.p3 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px '.PingFang SC'}
+    span.s1 {font: 12.0px '.Apple Color Emoji UI'}
+    span.s2 {font: 12.0px 'Lucida Grande'}
+    span.s3 {font: 12.0px '.SF NS Symbols'}
+    span.s4 {font: 12.0px 'Helvetica Neue'}
+    span.s5 {font: 12.0px '.PingFang SC'}
+    span.s6 {font: 12.0px '.Hiragino Kaku Gothic Interface'}
+    span.s7 {font: 12.0px 'Zapf Dingbats'}
+    span.s8 {font: 12.0px 'PingFang SC'}
+  </style>
+</head>
+<body>
+<p class="p1"><br></p>
+<p class="p1"><br></p>
+<p class="p1"><br></p>
+<p class="p2">&lt;!DOCTYPE html&gt;</p>
+<p class="p2">&lt;html lang="pt-BR"&gt;</p>
+<p class="p2">&lt;head&gt;</p>
+<p class="p2">&lt;meta charset="UTF-8"&gt;</p>
+<p class="p2">&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p2">&lt;title&gt;Dashboard · Dr. Marcelo Tostes&lt;/title&gt;</p>
+<p class="p2">&lt;style&gt;</p>
+<p class="p2">@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&amp;family=DM+Mono:wght@400;500&amp;display=swap');</p>
+<p class="p2">*{box-sizing:border-box;margin:0;padding:0;}</p>
+<p class="p2">body{background:#0e1117;color:#e8edf5;font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh;overflow:hidden;}</p>
+<p class="p2">#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2d1f;border:1px solid #5B9776;color:#81BBA1;padding:10px 22px;border-radius:30px;font-size:13px;font-weight:600;z-index:99999;transition:transform .3s,opacity .3s;opacity:0;pointer-events:none;}</p>
+<p class="p2">#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}</p>
+<p class="p2">#toast.err{background:#2d1e1e;border-color:#e05252;color:#e05252;}</p>
+<p class="p2">#sync-bar{position:fixed;top:0;left:0;right:0;height:3px;background:#5B9776;transform:scaleX(0);transform-origin:left;transition:transform .4s;z-index:99998;}</p>
+<p class="p2">#sync-bar.active{transform:scaleX(1);}</p>
+<p class="p2">#launcher{position:fixed;inset:0;background:#0e1117;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:36px;z-index:9999;}</p>
+<p class="p2">#launcher.hidden{display:none;}</p>
+<p class="p2">.launch-icon{width:54px;height:54px;background:#496750;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#DBE7DC;letter-spacing:-2px;margin:0 auto 12px;}</p>
+<p class="p2">.launch-logo{text-align:center;}</p>
+<p class="p2">.launch-logo h1{font-size:22px;font-weight:700;}</p>
+<p class="p2">.launch-logo p{font-size:13px;color:#8b94a8;margin-top:4px;}</p>
+<p class="p2">.launch-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;}</p>
+<p class="p2">.lcard{width:210px;background:#161b25;border:1px solid #2a3347;border-radius:16px;padding:28px 20px;cursor:pointer;transition:all .25s;text-align:center;}</p>
+<p class="p2">.lcard:hover{border-color:#5B9776;transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.5);}</p>
+<p class="p2">.lcard-icon{font-size:36px;margin-bottom:14px;display:block;}</p>
+<p class="p2">.lcard h2{font-size:15px;font-weight:600;margin-bottom:6px;}</p>
+<p class="p2">.lcard p{font-size:12px;color:#8b94a8;line-height:1.5;}</p>
+<p class="p2">.lcard .go{display:inline-block;margin-top:16px;padding:7px 18px;border-radius:8px;font-size:12px;font-weight:600;background:#496750;color:#DBE7DC;}</p>
+<p class="p2">.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#81BBA1;background:rgba(73,103,80,.2);border:1px solid rgba(91,151,118,.3);border-radius:20px;padding:3px 10px;margin-top:10px;}</p>
+<p class="p2">.sync-dot{width:6px;height:6px;border-radius:50%;background:#81BBA1;animation:blink 2s infinite;}</p>
+<p class="p2">@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}</p>
+<p class="p2">.app{position:fixed;inset:0;display:none;flex-direction:column;}</p>
+<p class="p2">.app.active{display:flex;}</p>
+<p class="p2">.app-bar{background:#161b25;border-bottom:1px solid #2a3347;padding:10px 20px;display:flex;align-items:center;gap:14px;flex-shrink:0;}</p>
+<p class="p2">.back-btn{background:#1e2535;border:1px solid #2a3347;color:#8b94a8;padding:6px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;transition:all .2s;}</p>
+<p class="p2">.back-btn:hover{color:#e8edf5;border-color:#5B9776;}</p>
+<p class="p2">.app-title{font-size:14px;font-weight:600;}</p>
+<p class="p2">.app-sub{font-size:11px;color:#8b94a8;}</p>
+<p class="p2">.app-body{flex:1;overflow-y:auto;}</p>
+<p class="p2">.sync-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1px solid #2a3347;background:#1e2535;color:#8b94a8;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .2s;margin-left:auto;}</p>
+<p class="p2">.sync-btn:hover{border-color:#5B9776;color:#81BBA1;}</p>
+<p class="p2">.spin{display:inline-block;animation:spin .8s linear infinite;}</p>
+<p class="p2">@keyframes spin{to{transform:rotate(360deg);}}</p>
+<p class="p2">&lt;/style&gt;</p>
+<p class="p2">&lt;/head&gt;</p>
+<p class="p2">&lt;body&gt;</p>
+<p class="p2">&lt;div id="sync-bar"&gt;&lt;/div&gt;</p>
+<p class="p2">&lt;div id="toast"&gt;&lt;/div&gt;</p>
+<p class="p1"><br></p>
+<p class="p2">&lt;div id="launcher"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="launch-logo"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="launch-icon"&gt;&gt;&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;h1&gt;Dr. Marcelo Tostes&lt;/h1&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;p&gt;Ortopedia · Cirurgia do Joelho / Esporte&lt;/p&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="sync-badge"&gt;&lt;span class="sync-dot"&gt;&lt;/span&gt; Sincronizado com Google Sheets&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="launch-cards"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="lcard" onclick="openApp('fila')"&gt;&lt;span class="lcard-icon"&gt;<span class="s1">🏥</span>&lt;/span&gt;&lt;h2&gt;Fila Cirúrgica&lt;/h2&gt;&lt;p&gt;Gestão de pacientes, checklist pré-op, prazos e lembretes&lt;/p&gt;&lt;span class="go"&gt;Acessar <span class="s2">→</span>&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="lcard" onclick="openApp('calc')"&gt;&lt;span class="lcard-icon"&gt;<span class="s1">💰</span>&lt;/span&gt;&lt;h2&gt;Calculadora de Honorários&lt;/h2&gt;&lt;p&gt;Honorários com impostos, anestesia, equipe e export PDF&lt;/p&gt;&lt;span class="go"&gt;Acessar <span class="s2">→</span>&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="lcard" onclick="openApp('atend')"&gt;&lt;span class="lcard-icon"&gt;<span class="s1">📋</span>&lt;/span&gt;&lt;h2&gt;Atendimentos do Dia&lt;/h2&gt;&lt;p&gt;Registro de consultas, procedimentos e resumo financeiro&lt;/p&gt;&lt;span class="go"&gt;Acessar <span class="s2">→</span>&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="lcard" onclick="openApp('contab')"&gt;&lt;span class="lcard-icon"&gt;<span class="s1">📊</span>&lt;/span&gt;&lt;h2&gt;Contabilidade do Mês&lt;/h2&gt;&lt;p&gt;Consolidação mensal, projeções, gráficos e relatório PDF&lt;/p&gt;&lt;span class="go"&gt;Acessar <span class="s2">→</span>&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;</p>
+<p class="p1"><br></p>
+<p class="p2">&lt;div id="app-fila" class="app"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-bar"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="back-btn" onclick="goHome()"&gt;<span class="s2">←</span> Menu&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div&gt;&lt;div class="app-title"&gt;<span class="s1">🏥</span> Fila Cirúrgica&lt;/div&gt;&lt;div class="app-sub"&gt;Dr. Marcelo Tostes · CRM 120.317&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div id="fc-stats" style="display:flex;gap:10px;margin-left:auto;"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="sync-btn" onclick="fcLoadFromSheets()"&gt;&lt;span id="fc-sync-icon"&gt;<span class="s3">↻</span>&lt;/span&gt; Sincronizar&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-body" id="fc-body"&gt;&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;</p>
+<p class="p1"><br></p>
+<p class="p2">&lt;div id="app-calc" class="app"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-bar"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="back-btn" onclick="goHome()"&gt;<span class="s2">←</span> Menu&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div&gt;&lt;div class="app-title"&gt;<span class="s1">💰</span> Calculadora de Honorários&lt;/div&gt;&lt;div class="app-sub"&gt;Dr. Marcelo Tostes · CRM 120.317&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-body" id="calc-body" style="background:#f5f4f0;"&gt;&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;</p>
+<p class="p1"><br></p>
+<p class="p2">&lt;div id="app-atend" class="app"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-bar"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="back-btn" onclick="goHome()"&gt;<span class="s2">←</span> Menu&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div&gt;&lt;div class="app-title"&gt;<span class="s1">📋</span> Atendimentos do Dia&lt;/div&gt;&lt;div class="app-sub" id="atend-data-sub"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="display:flex;gap:8px;align-items:center;margin-left:auto;" id="atend-stats-bar"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="sync-btn" onclick="atLoadFromSheets()"&gt;&lt;span id="at-sync-icon"&gt;<span class="s3">↻</span>&lt;/span&gt; Sincronizar&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-body" id="atend-body"&gt;&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;</p>
+<p class="p1"><br></p>
+<p class="p2">&lt;div id="app-contab" class="app"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-bar"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="back-btn" onclick="goHome()"&gt;<span class="s2">←</span> Menu&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div&gt;&lt;div class="app-title"&gt;<span class="s1">📊</span> Contabilidade do Mês&lt;/div&gt;&lt;div class="app-sub" id="contab-sub"&gt;Dr. Marcelo Tostes · CRM 120.317&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="margin-left:auto;display:flex;gap:8px;align-items:center;"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;select id="contab-sel-mes" onchange="contabUpdMes()" style="background:#1e2535;border:1px solid #2a3347;color:#e8edf5;border-radius:8px;padding:6px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"&gt;&lt;/select&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;select id="contab-sel-ano" onchange="contabUpdMes()" style="background:#1e2535;border:1px solid #2a3347;color:#e8edf5;border-radius:8px;padding:6px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"&gt;&lt;/select&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="sync-btn" onclick="cbLoadFromSheets()"&gt;&lt;span id="cb-sync-icon"&gt;<span class="s3">↻</span>&lt;/span&gt; Sincronizar&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button onclick="contabExportarPDF()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:2px solid #496750;background:transparent;color:#81BBA1;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;"&gt;<span class="s1">🖨️</span> PDF&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="app-body" id="contab-body"&gt;&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;</p>
+<p class="p1"><br></p>
+<p class="p2">&lt;script&gt;</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">// CONFIG — URL do Google Apps Script</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">const API_URL = 'https://script.google.com/macros/s/AKfycbwFbTpOmNtlf_pgN7Cq3OE7CMD5Jo6vmkPkNa3F773EQFIqX_BHuqAC15zgrl6akcAd/exec';</p>
+<p class="p1"><br></p>
+<p class="p2">// <span class="s5">──</span> API helpers <span class="s5">──</span></p>
+<p class="p2">async function apiGet(sheet) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const url = `${API_URL}?action=getAll&amp;sheet=${sheet}&amp;cb=${Date.now()}`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const r = await fetch(url);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return r.json();</p>
+<p class="p2">}</p>
+<p class="p2">async function apiSave(sheet, row) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const r = await fetch(API_URL, {</p>
+<p class="p2"><span class="Apple-converted-space">    </span>method: 'POST',</p>
+<p class="p2"><span class="Apple-converted-space">    </span>body: JSON.stringify({ action: 'save', sheet, row })</p>
+<p class="p2"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return r.json();</p>
+<p class="p2">}</p>
+<p class="p2">async function apiDelete(sheet, id) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const r = await fetch(API_URL, {</p>
+<p class="p2"><span class="Apple-converted-space">    </span>method: 'POST',</p>
+<p class="p2"><span class="Apple-converted-space">    </span>body: JSON.stringify({ action: 'delete', sheet, id })</p>
+<p class="p2"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return r.json();</p>
+<p class="p2">}</p>
+<p class="p2">async function apiDeleteDay(data) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const r = await fetch(API_URL, {</p>
+<p class="p2"><span class="Apple-converted-space">    </span>method: 'POST',</p>
+<p class="p2"><span class="Apple-converted-space">    </span>body: JSON.stringify({ action: 'deleteDay', data })</p>
+<p class="p2"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return r.json();</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function showToast(msg, err=false) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const t = document.getElementById('toast');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>t.textContent = msg;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>t.className = 'show' + (err ? ' err' : '');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>clearTimeout(t._to);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>t._to = setTimeout(() =&gt; t.className = '', 3000);</p>
+<p class="p2">}</p>
+<p class="p2">function syncStart(iconId) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const el = document.getElementById(iconId);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (el) el.className = 'spin';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('sync-bar').classList.add('active');</p>
+<p class="p2">}</p>
+<p class="p2">function syncEnd(iconId) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const el = document.getElementById(iconId);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (el) el.className = '';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('sync-bar').classList.remove('active');</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">// LAUNCHER</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">function openApp(id) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('launcher').classList.add('hidden');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.querySelectorAll('.app').forEach(a =&gt; a.classList.remove('active'));</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('app-' + id).classList.add('active');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (id === 'fila') initFila();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (id === 'calc') initCalc();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (id === 'atend') initAtend();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (id === 'contab') initContab();</p>
+<p class="p2">}</p>
+<p class="p2">function goHome() {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.querySelectorAll('.app').forEach(a =&gt; a.classList.remove('active'));</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('launcher').classList.remove('hidden');</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">// UTILITÁRIOS</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">const TODAY = new Date(); TODAY.setHours(0,0,0,0);</p>
+<p class="p2">const esc = s =&gt; (s||'').replace(/&amp;/g,'&amp;amp;').replace(/&lt;/g,'&amp;lt;').replace(/&gt;/g,'&amp;gt;').replace(/"/g,'&amp;quot;');</p>
+<p class="p2">const fmtR = v =&gt; v ? 'R$ ' + Number(v).toLocaleString('pt-BR') : '—';</p>
+<p class="p2">const daysTo = ds =&gt; { if (!ds) return null; return Math.round((new Date(ds+'T00:00:00') - TODAY) / 864e5); };</p>
+<p class="p2">const dlClass = d =&gt; { if (d===null) return 'none'; if (d&lt;0) return 'expired'; if (d&lt;=2) return 'critical'; if (d&lt;=7) return 'warning'; return 'safe'; };</p>
+<p class="p2">const dlLabel = d =&gt; { if (d===null) return null; if (d&lt;0) return '<span class="s6">⚠</span> VENCIDA há '+Math.abs(d)+'d'; if (d===0) return '<span class="s1">🚨</span> VENCE HOJE'; if (d===1) return '<span class="s1">🔴</span> AMANHÃ'; return '<span class="s1">📅</span> '+d+' dias'; };</p>
+<p class="p2">const sClass = s =&gt; { s=(s||'').toUpperCase(); if(s.includes('AUTORIZADO')&amp;&amp;!s.includes('AINDA'))return'autorizado'; if(s.includes('EM AUTORIZA'))return'em-autorizacao'; if(s.includes('AINDA NÃO')||s.includes('AGUARDA'))return'nao-solicitado'; if(s.includes('NÃO NECESSITA'))return'nao-necessita'; return'vazio'; };</p>
+<p class="p2">const sLabel = s =&gt; { s=(s||'').toUpperCase(); if(s.includes('AUTORIZADO')&amp;&amp;!s.includes('AINDA'))return'Autorizado'; if(s.includes('EM AUTORIZA'))return'Em Autorização'; if(s.includes('AINDA NÃO')||s.includes('AGUARDA'))return'Não Solicitado'; if(s.includes('NÃO NECESSITA'))return'Não Necessita'; return s||'—'; };</p>
+<p class="p2">const isOk = v =&gt; ['ENTREGUE','ORIENTADO','PEDIDO ENTREGUE','PACIENTE JÁ FEZ'].includes((v||'').toUpperCase());</p>
+<p class="p2">const isNA = v =&gt; (v||'').toUpperCase() === 'NÃO SE APLICA';</p>
+<p class="p2">const fci = v =&gt; { if(isNA(v))return{c:'warn',i:'—'}; if(isOk(v))return{c:'ok',i:'<span class="s3">✓</span>'}; return{c:'fail',i:'<span class="s7">✗</span>'}; };</p>
+<p class="p2">const score = p =&gt; { const it=[p.sabao,p.exames,p.orient,p.anest,p.cardio,p.bactroban]; const ap=it.filter(v=&gt;!isNA(v)); return{done:ap.filter(isOk).length,total:ap.length}; };</p>
+<p class="p2">const SEL_STATUS = ['AUTORIZADO','EM AUTORIZAÇÃO','AINDA NÃO SOLICITADO','NÃO NECESSITA',''];</p>
+<p class="p2">const SEL_CHK = ['ENTREGUE','PEDIDO ENTREGUE','PACIENTE JÁ FEZ','ORIENTADO','NÃO ENTREGUE','NÃO ORIENTADO','FALTA ENTREGAR','FALTA SOLICITAR','SOLICITADO','NÃO SE APLICA','VAZIO'];</p>
+<p class="p2">const selOpts = (opts,cur) =&gt; opts.map(o=&gt;`&lt;option value="${esc(o)}"${(o||'').toUpperCase()===(cur||'').toUpperCase()?'selected':''}&gt;${o||'— sem status —'}&lt;/option&gt;`).join('');</p>
+<p class="p1"><br></p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">// FILA CIRÚRGICA</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">let DB = { ativas: [], futuras: [] };</p>
+<p class="p2">let fcTab = 'ativas';</p>
+<p class="p2">const fcOpen = new Set(), fcEdit = new Set();</p>
+<p class="p2">let fcInited = false;</p>
+<p class="p1"><br></p>
+<p class="p2">const FC_STYLES = `</p>
+<p class="p2">&lt;style&gt;</p>
+<p class="p2">.fc-tabs{display:flex;gap:4px;padding:0 20px;background:#161b25;border-bottom:1px solid #2a3347;}</p>
+<p class="p2">.fc-tab{padding:9px 16px;background:none;border:none;color:#8b94a8;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;position:relative;}</p>
+<p class="p2">.fc-tab.active{color:#81BBA1;border-bottom-color:#81BBA1;}</p>
+<p class="p2">.ab{position:absolute;top:6px;right:4px;background:#e05252;color:#fff;border-radius:10px;font-size:9px;font-weight:700;padding:1px 5px;}</p>
+<p class="p2">.ab.warn{background:#e8b84b;color:#111;}</p>
+<p class="p2">.fc-ctrl{padding:10px 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#161b25;border-bottom:1px solid #2a3347;}</p>
+<p class="p2">.fc-ctrl input,.fc-ctrl select{background:#1e2535;border:1px solid #2a3347;color:#e8edf5;border-radius:8px;padding:7px 11px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}</p>
+<p class="p2">#fc-search{width:220px;}</p>
+<p class="p2">.fc-btn-new{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;background:#496750;color:#DBE7DC;font-weight:500;}</p>
+<p class="p2">.fc-main{padding:16px 20px;}</p>
+<p class="p2">.fc-grid{display:flex;flex-direction:column;gap:8px;}</p>
+<p class="p2">.fcard{background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden;transition:border-color .2s;}</p>
+<p class="p2">.fcard:hover{border-color:#3a4a63;}</p>
+<p class="p2">.fcard.editing{border-color:#5B9776;}</p>
+<p class="p2">.fcard.ce{border-left:3px solid #e05252;}</p>
+<p class="p2">.fcard.cc{border-left:3px solid #f0883e;}</p>
+<p class="p2">.fcard.cw{border-left:3px solid #e8b84b;}</p>
+<p class="p2">.fhdr{display:grid;grid-template-columns:auto 1fr 1.1fr 0.8fr 0.8fr 0.6fr 18px;gap:10px;padding:12px 16px;align-items:center;cursor:pointer;user-select:none;}</p>
+<p class="p2">.stars-col{display:flex;flex-direction:column;gap:1px;align-items:center;}</p>
+<p class="p2">.star{font-size:15px;line-height:1;cursor:pointer;transition:transform .1s;}</p>
+<p class="p2">.star:hover{transform:scale(1.25);}</p>
+<p class="p2">.pname{font-weight:600;font-size:13px;}</p>
+<p class="p2">.surg{font-size:11px;color:#8b94a8;margin-top:2px;}</p>
+<p class="p2">.lmb-inline{margin-top:3px;font-size:11px;color:#e8b84b;background:rgba(232,184,75,.08);border:1px solid rgba(232,184,75,.18);border-radius:5px;padding:2px 7px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}</p>
+<p class="p2">.bdg{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid transparent;white-space:nowrap;}</p>
+<p class="p2">.bdg-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}</p>
+<p class="p2">.bdg.autorizado{background:rgba(129,187,161,.1);border-color:#81BBA1;color:#81BBA1;}</p>
+<p class="p2">.bdg.autorizado .bdg-dot{background:#81BBA1;}</p>
+<p class="p2">.bdg.em-autorizacao{background:rgba(232,184,75,.1);border-color:#e8b84b;color:#e8b84b;}</p>
+<p class="p2">.bdg.em-autorizacao .bdg-dot{background:#e8b84b;}</p>
+<p class="p2">.bdg.nao-solicitado{background:rgba(155,125,234,.1);border-color:#9b7dea;color:#9b7dea;}</p>
+<p class="p2">.bdg.nao-solicitado .bdg-dot{background:#9b7dea;}</p>
+<p class="p2">.bdg.nao-necessita{background:rgba(91,143,232,.1);border-color:#5b8fe8;color:#5b8fe8;}</p>
+<p class="p2">.bdg.nao-necessita .bdg-dot{background:#5b8fe8;}</p>
+<p class="p2">.bdg.vazio{background:rgba(139,148,168,.1);border-color:#8b94a8;color:#8b94a8;}</p>
+<p class="p2">.bdg.vazio .bdg-dot{background:#8b94a8;}</p>
+<p class="p2">.cvt{font-size:11px;padding:3px 7px;border-radius:5px;background:#1e2535;color:#8b94a8;border:1px solid #2a3347;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px;}</p>
+<p class="p2">.vlt{font-family:'DM Mono',monospace;font-size:12px;color:#81BBA1;}</p>
+<p class="p2">.pp{font-size:10px;padding:2px 7px;border-radius:10px;font-family:'DM Mono',monospace;}</p>
+<p class="p2">.pp.ok{background:rgba(129,187,161,.15);color:#81BBA1;}</p>
+<p class="p2">.pp.fail{background:rgba(224,82,82,.1);color:#e05252;}</p>
+<p class="p2">.dp{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace;}</p>
+<p class="p2">.dp.expired{background:rgba(224,82,82,.2);color:#e05252;border:1px solid rgba(224,82,82,.4);}</p>
+<p class="p2">.dp.critical{background:rgba(240,136,62,.2);color:#f0883e;border:1px solid rgba(240,136,62,.4);}</p>
+<p class="p2">.dp.warning{background:rgba(232,184,75,.2);color:#e8b84b;border:1px solid rgba(232,184,75,.4);}</p>
+<p class="p2">.dp.safe{background:rgba(129,187,161,.15);color:#81BBA1;border:1px solid rgba(129,187,161,.3);}</p>
+<p class="p2">.pulse{animation:pulse2 1.5s infinite;}</p>
+<p class="p2">@keyframes pulse2{0%,100%{opacity:1;}50%{opacity:.4;}}</p>
+<p class="p2">.fbody{display:none;border-top:1px solid #2a3347;}</p>
+<p class="p2">.fcard.open .fbody{display:block;}</p>
+<p class="p2">.vb{padding:16px;background:#1e2535;}</p>
+<p class="p2">.vg{display:grid;grid-template-columns:1fr 1fr;gap:14px;}</p>
+<p class="p2">.vgf{grid-column:1/-1;}</p>
+<p class="p2">.stl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#8b94a8;margin-bottom:8px;font-weight:500;}</p>
+<p class="p2">.ck-list{display:flex;flex-direction:column;gap:6px;}</p>
+<p class="p2">.ck-row{display:flex;align-items:center;gap:8px;font-size:12px;}</p>
+<p class="p2">.cki{width:16px;height:16px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;}</p>
+<p class="p2">.cki.ok{background:rgba(129,187,161,.2);color:#81BBA1;}</p>
+<p class="p2">.cki.fail{background:rgba(224,82,82,.15);color:#e05252;}</p>
+<p class="p2">.cki.warn{background:rgba(232,184,75,.15);color:#e8b84b;}</p>
+<p class="p2">.cv2{margin-left:auto;font-size:10px;color:#8b94a8;}</p>
+<p class="p2">.lmb{font-size:12px;color:#e8b84b;background:rgba(232,184,75,.07);border:1px solid rgba(232,184,75,.2);border-radius:8px;padding:10px 14px;line-height:1.5;font-style:italic;}</p>
+<p class="p2">.plb{font-size:12px;color:#8b94a8;line-height:1.6;background:#161b25;border-radius:8px;padding:10px 14px;border:1px solid #2a3347;}</p>
+<p class="p2">.plbl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#81BBA1;font-weight:600;display:block;margin-bottom:6px;}</p>
+<p class="p2">.dlb{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:12px;}</p>
+<p class="p2">.dlb.expired{background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.3);color:#e05252;}</p>
+<p class="p2">.dlb.critical{background:rgba(240,136,62,.1);border:1px solid rgba(240,136,62,.3);color:#f0883e;}</p>
+<p class="p2">.dlb.warning{background:rgba(232,184,75,.08);border:1px solid rgba(232,184,75,.25);color:#e8b84b;}</p>
+<p class="p2">.dlb.safe{background:rgba(129,187,161,.08);border:1px solid rgba(129,187,161,.2);color:#81BBA1;}</p>
+<p class="p2">.dlb.none{background:#161b25;border:1px solid #2a3347;color:#8b94a8;}</p>
+<p class="p2">.eb{padding:18px;background:#161e2e;border-top:2px solid #5B9776;}</p>
+<p class="p2">.eg{display:grid;grid-template-columns:1fr 1fr;gap:12px;}</p>
+<p class="p2">.egf{grid-column:1/-1;}</p>
+<p class="p2">.eg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;grid-column:1/-1;}</p>
+<p class="p2">.efg{display:flex;flex-direction:column;gap:5px;}</p>
+<p class="p2">.efg label{font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;font-weight:500;}</p>
+<p class="p2">.efg input,.efg select,.efg textarea{width:100%;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}</p>
+<p class="p2">.efg input:focus,.efg select:focus,.efg textarea:focus{border-color:#81BBA1;}</p>
+<p class="p2">.efg textarea{resize:vertical;min-height:72px;line-height:1.5;}</p>
+<p class="p2">input[type="date"]{color-scheme:dark;}</p>
+<p class="p2">.es{margin-bottom:16px;}</p>
+<p class="p2">.est{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#81BBA1;font-weight:600;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(129,187,161,.15);}</p>
+<p class="p2">.ef{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #2a3347;}</p>
+<p class="p2">.btn-sv{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid rgba(129,187,161,.3);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;background:rgba(129,187,161,.15);color:#81BBA1;font-weight:500;}</p>
+<p class="p2">.btn-gh{display:inline-flex;align-items:center;padding:7px 14px;border-radius:8px;background:#1e2535;color:#8b94a8;border:1px solid #2a3347;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;}</p>
+<p class="p2">.btn-del{display:inline-flex;align-items:center;padding:7px 14px;border-radius:8px;background:rgba(224,82,82,.12);color:#e05252;border:1px solid rgba(224,82,82,.25);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;}</p>
+<p class="p2">.star-edit{font-size:26px;cursor:pointer;line-height:1;transition:transform .1s;}</p>
+<p class="p2">.star-edit:hover{transform:scale(1.2);}</p>
+<p class="p2">.urg-row{display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr;gap:10px;padding:11px 18px;border-bottom:1px solid rgba(42,51,71,.6);align-items:center;}</p>
+<p class="p2">.urg-row:last-child{border-bottom:none;}</p>
+<p class="p2">.urg-row.expired{background:rgba(224,82,82,.07);border-left:3px solid #e05252;}</p>
+<p class="p2">.urg-row.critical{background:rgba(240,136,62,.07);border-left:3px solid #f0883e;}</p>
+<p class="p2">.urg-row.warning{background:rgba(232,184,75,.06);border-left:3px solid #e8b84b;}</p>
+<p class="p2">.fc-empty{text-align:center;padding:50px;color:#8b94a8;}</p>
+<p class="p2">.loading-box{text-align:center;padding:60px;color:#8b94a8;font-size:13px;}</p>
+<p class="p2">&lt;/style&gt;`;</p>
+<p class="p1"><br></p>
+<p class="p2">async function fcLoadFromSheets() {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>syncStart('fc-sync-icon');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>try {</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const res = await apiGet('fila_cirurgica');</p>
+<p class="p2"><span class="Apple-converted-space">    </span>if (res.error) throw new Error(res.error);</p>
+<p class="p2"><span class="Apple-converted-space">    </span>DB.ativas = []; DB.futuras = [];</p>
+<p class="p2"><span class="Apple-converted-space">    </span>(res.rows||[]).forEach(r =&gt; {</p>
+<p class="p2"><span class="Apple-converted-space">      </span>const p = {</p>
+<p class="p2"><span class="Apple-converted-space">        </span>id:r.id, nome:r.nome||'', cirurgia:r.cirurgia||'', status:r.status||'',</p>
+<p class="p2"><span class="Apple-converted-space">        </span>convenio:r.convenio||'', valor:r.valor?parseFloat(r.valor):null,</p>
+<p class="p2"><span class="Apple-converted-space">        </span>deadline:r.deadline||'', lembrete:r.lembrete||'',</p>
+<p class="p2"><span class="Apple-converted-space">        </span>sabao:r.sabao||'NÃO ENTREGUE', exames:r.exames||'NÃO ENTREGUE',</p>
+<p class="p2"><span class="Apple-converted-space">        </span>orient:r.orient||'FALTA ENTREGAR', anest:r.anest||'NÃO ENTREGUE',</p>
+<p class="p2"><span class="Apple-converted-space">        </span>cardio:r.cardio||'NÃO SE APLICA', bactroban:r.bactroban||'NÃO SE APLICA',</p>
+<p class="p2"><span class="Apple-converted-space">        </span>plano:r.plano||'', stars:parseInt(r.stars)||0, tab:r.tab||'ativas'</p>
+<p class="p2"><span class="Apple-converted-space">      </span>};</p>
+<p class="p2"><span class="Apple-converted-space">      </span>if (p.tab==='futuras') DB.futuras.push(p); else DB.ativas.push(p);</p>
+<p class="p2"><span class="Apple-converted-space">    </span>});</p>
+<p class="p2"><span class="Apple-converted-space">    </span>fcRender();</p>
+<p class="p2"><span class="Apple-converted-space">    </span>showToast('<span class="s1">✅</span> Fila sincronizada!');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>} catch(e) { showToast('Erro: '+e.message, true); }</p>
+<p class="p2"><span class="Apple-converted-space">  </span>syncEnd('fc-sync-icon');</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">async function fcSaveToSheets(p) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const res = await apiSave('fila_cirurgica', {...p, tab:fcTab});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (res.ok) { p.id = res.id; showToast('<span class="s1">💾</span> Salvo!'); }</p>
+<p class="p2"><span class="Apple-converted-space">  </span>else showToast('Erro ao salvar', true);</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">async function fcDeleteFromSheets(id) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (id) await apiDelete('fila_cirurgica', id);</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function initFila() {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (fcInited) { fcRender(); return; }</p>
+<p class="p2"><span class="Apple-converted-space">  </span>fcInited = true;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('fc-body').innerHTML = FC_STYLES + `</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="fc-tabs"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="fc-tab active" id="fct-ativas" onclick="fcSetTab('ativas')"&gt;Ativas&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="fc-tab" id="fct-futuras" onclick="fcSetTab('futuras')"&gt;Futuras&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="fc-tab" id="fct-prazos" onclick="fcSetTab('prazos')"&gt;<span class="s1">⏰</span> Prazos&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="fc-ctrl" id="fc-ctrl"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;input type="text" id="fc-search" placeholder="<span class="s1">🔍</span><span class="Apple-converted-space">  </span>Buscar..." oninput="fcRender()"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;select id="fc-fs" onchange="fcRender()"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value=""&gt;Todos os status&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="AUTORIZADO"&gt;Autorizado&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="EM AUTORIZAÇÃO"&gt;Em Autorização&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="AINDA NÃO SOLICITADO"&gt;Não Solicitado&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="NÃO NECESSITA"&gt;Não Necessita&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/select&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;select id="fc-fc" onchange="fcRender()"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value=""&gt;Todos os convênios&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="PARTICULAR"&gt;Particular&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="BRADESCO"&gt;Bradesco&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="UNIMED"&gt;Unimed&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;option value="SULAMERICA"&gt;Sulamerica&lt;/option&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/select&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="fc-btn-new" onclick="fcAddNew()"&gt;<span class="s5">＋</span> Novo Paciente&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="fc-main"&gt;&lt;div class="fc-grid" id="fc-grid"&gt;&lt;div class="loading-box"&gt;<span class="s1">⏳</span> Carregando do Google Sheets...&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>fcLoadFromSheets();</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function fcGetPrazos() { return [...DB.ativas,...DB.futuras].filter(p=&gt;p.deadline).map(p=&gt;({p,days:daysTo(p.deadline)})).filter(x=&gt;x.days!==null).sort((a,b)=&gt;a.days-b.days); }</p>
+<p class="p2">function fcUpdateBadges() {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const items=fcGetPrazos(), exp=items.filter(x=&gt;x.days&lt;0).length, soon=items.filter(x=&gt;x.days&gt;=0&amp;&amp;x.days&lt;=7).length;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const el=document.getElementById('fct-prazos'); if(!el)return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>el.querySelectorAll('.ab').forEach(e=&gt;e.remove());</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(exp&gt;0) el.insertAdjacentHTML('beforeend',`&lt;span class="ab"&gt;${exp}&lt;/span&gt;`);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>else if(soon&gt;0) el.insertAdjacentHTML('beforeend',`&lt;span class="ab warn"&gt;${soon}&lt;/span&gt;`);</p>
+<p class="p2">}</p>
+<p class="p2">function fcSetTab(t) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>fcTab=t; if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>['ativas','futuras','prazos'].forEach(id=&gt;{const el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const ctrl=document.getElementById('fc-ctrl'); if(ctrl)ctrl.style.display=(t==='prazos')?'none':'flex';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>fcRender();</p>
+<p class="p2">}</p>
+<p class="p2">function fcStarHtml(i,stars) { return [1,2,3,4,5].map(n=&gt;`&lt;span class="star" style="color:${n&lt;=stars?'#e8b84b':'#3a4a63'}" onclick="fcSetStars(event,${i},${n})"&gt;${n&lt;=stars?'<span class="s3">★</span>':'<span class="s3">☆</span>'}&lt;/span&gt;`).join(''); }</p>
+<p class="p2">function fcSetStars(e,i,n) { e.stopPropagation(); const cur=DB[fcTab][i].stars||0; DB[fcTab][i].stars=(cur===n?0:n); fcSaveToSheets(DB[fcTab][i]); fcRender(); }</p>
+<p class="p1"><br></p>
+<p class="p2">function fcViewBody(p,i) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const days=daysTo(p.deadline),dc=dlClass(days),dl=dlLabel(days);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const checks=[{l:'Sabão/Bactroban pré-op',v:p.sabao},{l:'Exames de sangue',v:p.exames},{l:'Orientações paciente',v:p.orient},{l:'Avaliação anestesista',v:p.anest},{l:'Avaliação cardiologista',v:p.cardio},{l:'Receita Bactroban',v:p.bactroban}];</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return `&lt;div class="vb"&gt;&lt;div class="vg"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>${p.deadline||dl?`&lt;div class="dlb ${dc} vgf"&gt;&lt;span&gt;<span class="s1">📅</span>&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Prazo:&lt;/strong&gt; ${p.deadline||'—'}${dl?' · &lt;strong&gt;'+dl+'&lt;/strong&gt;':''}&lt;/div&gt;&lt;/div&gt;`:''}</p>
+<p class="p2"><span class="Apple-converted-space">    </span>${p.lembrete?`&lt;div class="lmb vgf"&gt;<span class="s1">⚠️</span> ${esc(p.lembrete)}&lt;/div&gt;`:''}</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div&gt;&lt;div class="stl"&gt;Checklist&lt;/div&gt;&lt;div class="ck-list"&gt;${checks.map(c=&gt;{const ic=fci(c.v);return`&lt;div class="ck-row"&gt;&lt;div class="cki ${ic.c}"&gt;${ic.i}&lt;/div&gt;&lt;span&gt;${c.l}&lt;/span&gt;&lt;span class="cv2"&gt;${esc(c.v||'—')}&lt;/span&gt;&lt;/div&gt;`;}).join('')}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div&gt;&lt;div class="stl"&gt;Detalhes&lt;/div&gt;&lt;div class="ck-list"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="ck-row"&gt;&lt;span style="color:#8b94a8;min-width:68px;font-size:11px"&gt;Convênio&lt;/span&gt;&lt;span&gt;${esc(p.convenio||'—')}&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="ck-row"&gt;&lt;span style="color:#8b94a8;min-width:68px;font-size:11px"&gt;Valor&lt;/span&gt;&lt;span class="vlt"&gt;${fmtR(p.valor)}&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="ck-row"&gt;&lt;span style="color:#8b94a8;min-width:68px;font-size:11px"&gt;Status&lt;/span&gt;&lt;span&gt;${sLabel(p.status)}&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>${p.plano?`&lt;div class="plb vgf"&gt;&lt;span class="plbl"&gt;Plano Cirúrgico&lt;/span&gt;${esc(p.plano)}&lt;/div&gt;`:''}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;&lt;div style="display:flex;justify-content:flex-end;margin-top:12px"&gt;&lt;button class="btn-sv" onclick="fcStartEdit(${i});event.stopPropagation()"&gt;<span class="s1">✏️</span> Editar&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function fcEditStarHtml(i,stars) { return [1,2,3,4,5].map(n=&gt;`&lt;span class="star-edit" id="estr-${i}-${n}" style="color:${n&lt;=stars?'#e8b84b':'#3a4a63'}" onclick="fcEditSetStars(${i},${n})"&gt;${n&lt;=stars?'<span class="s3">★</span>':'<span class="s3">☆</span>'}&lt;/span&gt;`).join(''); }</p>
+<p class="p2">function fcEditSetStars(i,n) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const cur=parseInt(document.getElementById('ee-stars-'+i).value)||0, nv=cur===n?0:n;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('ee-stars-'+i).value=nv;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>[1,2,3,4,5].forEach(k=&gt;{const el=document.getElementById('estr-'+i+'-'+k);if(el){el.textContent=k&lt;=nv?'<span class="s3">★</span>':'<span class="s3">☆</span>';el.style.color=k&lt;=nv?'#e8b84b':'#3a4a63';}});</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function fcEditBody(p,i) {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const s=p.stars||0;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return `&lt;div class="eb"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="es"&gt;&lt;div class="est"&gt;Dados Básicos&lt;/div&gt;&lt;div class="eg"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg egf"&gt;&lt;label&gt;Nome&lt;/label&gt;&lt;input id="ee-nome-${i}" type="text" value="${esc(p.nome)}"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg egf"&gt;&lt;label&gt;Cirurgia&lt;/label&gt;&lt;input id="ee-cirurgia-${i}" type="text" value="${esc(p.cirurgia)}"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Convênio&lt;/label&gt;&lt;input id="ee-convenio-${i}" type="text" value="${esc(p.convenio||'')}"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Valor (R$)&lt;/label&gt;&lt;input id="ee-valor-${i}" type="number" value="${p.valor||''}"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Status&lt;/label&gt;&lt;select id="ee-status-${i}"&gt;${selOpts(SEL_STATUS,p.status)}&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;<span class="s1">📅</span> Prazo Limite&lt;/label&gt;&lt;input id="ee-deadline-${i}" type="date" value="${esc(p.deadline||'')}"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg egf"&gt;&lt;label&gt;<span class="s1">⭐</span> Prioridade&lt;/label&gt;&lt;div style="display:flex;gap:6px;align-items:center;margin-top:4px"&gt;${fcEditStarHtml(i,s)}&lt;input type="hidden" id="ee-stars-${i}" value="${s}"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="es"&gt;&lt;div class="est"&gt;Checklist Pré-op&lt;/div&gt;&lt;div class="eg3 eg"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Sabão/Bactroban&lt;/label&gt;&lt;select id="ee-sabao-${i}"&gt;${selOpts(SEL_CHK,p.sabao)}&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Exames&lt;/label&gt;&lt;select id="ee-exames-${i}"&gt;${selOpts(SEL_CHK,p.exames)}&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Orientações&lt;/label&gt;&lt;select id="ee-orient-${i}"&gt;${selOpts(SEL_CHK,p.orient)}&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Anestesista&lt;/label&gt;&lt;select id="ee-anest-${i}"&gt;${selOpts(SEL_CHK,p.anest)}&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Cardiologista&lt;/label&gt;&lt;select id="ee-cardio-${i}"&gt;${selOpts(SEL_CHK,p.cardio)}&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="efg"&gt;&lt;label&gt;Rec. Bactroban&lt;/label&gt;&lt;select id="ee-bactroban-${i}"&gt;${selOpts(SEL_CHK,p.bactroban)}&lt;/select&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="es"&gt;&lt;div class="est"&gt;Plano Cirúrgico&lt;/div&gt;&lt;div class="efg"&gt;&lt;textarea id="ee-plano-${i}"&gt;${esc(p.plano||'')}&lt;/textarea&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="es" style="margin-bottom:0"&gt;&lt;div class="est"&gt;Lembrete&lt;/div&gt;&lt;div class="efg"&gt;&lt;textarea id="ee-lembrete-${i}" style="min-height:52px"&gt;${esc(p.lembrete||'')}&lt;/textarea&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="ef"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="btn-del" onclick="fcDelete(${i});event.stopPropagation()"&gt;<span class="s1">🗑️</span> Remover&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="btn-gh" onclick="fcCancelEdit(${i});event.stopPropagation()"&gt;Cancelar&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;button class="btn-sv" onclick="fcSaveEdit(${i});event.stopPropagation()"&gt;<span class="s1">💾</span> Salvar&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function fcRender() {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>fcUpdateBadges();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if (fcTab==='prazos') { fcRenderPrazos(); return; }</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const q=(document.getElementById('fc-search')||{}).value?.toLowerCase()||'';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const fs=(document.getElementById('fc-fs')||{}).value?.toUpperCase()||'';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const fc=(document.getElementById('fc-fc')||{}).value?.toUpperCase()||'';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const all=DB[fcTab];</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const sc=document.getElementById('fc-stats');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(sc) sc.innerHTML=`&lt;div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"&gt;&lt;span style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1"&gt;${all.length}&lt;/span&gt;&lt;span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px"&gt;Total&lt;/span&gt;&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const filtered=[];</p>
+<p class="p2"><span class="Apple-converted-space">  </span>all.forEach((p,i)=&gt;{</p>
+<p class="p2"><span class="Apple-converted-space">    </span>if(q&amp;&amp;!(p.nome+p.cirurgia+p.convenio+p.lembrete+p.plano).toLowerCase().includes(q))return;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>if(fs&amp;&amp;!(p.status||'').toUpperCase().includes(fs))return;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>if(fc&amp;&amp;!(p.convenio||'').toUpperCase().includes(fc))return;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>filtered.push({p,i});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>filtered.sort((a,b)=&gt;(b.p.stars||0)-(a.p.stars||0));</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const g=document.getElementById('fc-grid');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!filtered.length){g.innerHTML='&lt;div class="fc-empty"&gt;Nenhum paciente encontrado.&lt;br&gt;&lt;small&gt;Clique em Sincronizar para carregar do Sheets.&lt;/small&gt;&lt;/div&gt;';return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>g.innerHTML=filtered.map(({p,i})=&gt;{</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const sc2=score(p), isOpen=fcOpen.has(i), isEditing=fcEdit.has(i);</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const days=daysTo(p.deadline), dc=dlClass(days);</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const dpill=days!==null?`&lt;span class="dp ${dc}" style="margin-left:5px"&gt;${days&lt;0?'<span class="s6">⚠</span>'+Math.abs(days)+'d':days===0?'hoje':days+'d'}&lt;/span&gt;`:'';</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const cdl=days===null?'':(days&lt;0?' ce':days&lt;=2?' cc':days&lt;=7?' cw':'');</p>
+<p class="p2"><span class="Apple-converted-space">    </span>return `&lt;div class="fcard${isOpen?' open':''}${isEditing?' editing':''}${cdl}" id="fc-card-${i}"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="fhdr" onclick="fcToggle(${i})"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="stars-col" onclick="event.stopPropagation()"&gt;${fcStarHtml(i,p.stars||0)}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div&gt;&lt;div class="pname"&gt;${esc(p.nome)}${dpill}&lt;/div&gt;&lt;div class="surg"&gt;${esc(p.cirurgia)}&lt;/div&gt;${p.lembrete?`&lt;div class="lmb-inline"&gt;<span class="s6">⚠</span> ${esc(p.lembrete)}&lt;/div&gt;`:''}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;span class="bdg ${sClass(p.status)}"&gt;&lt;span class="bdg-dot"&gt;&lt;/span&gt;${sLabel(p.status)}&lt;/span&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;span class="cvt"&gt;${esc(p.convenio||'—')}&lt;/span&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;span class="vlt"&gt;${fmtR(p.valor)}&lt;/span&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;span class="pp ${sc2.done===sc2.total?'ok':'fail'}"&gt;${sc2.done}/${sc2.total}&lt;/span&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;span style="color:#8b94a8;font-size:16px;display:inline-block;transform:rotate(${isOpen?180:0}deg);transition:transform .2s"&gt;<span class="s2">▾</span>&lt;/span&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="fbody"&gt;${isEditing?fcEditBody(p,i):fcViewBody(p,i)}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>}).join('');</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function fcRenderPrazos() {</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const items=fcGetPrazos();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const sec=(title,list,icon)=&gt;{</p>
+<p class="p2"><span class="Apple-converted-space">    </span>if(!list.length)return'';</p>
+<p class="p2"><span class="Apple-converted-space">    </span>return`&lt;div style="padding:12px 18px 0"&gt;&lt;div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8b94a8;font-weight:600;margin-bottom:8px"&gt;${icon} ${title}&lt;/div&gt;&lt;/div&gt;`</p>
+<p class="p2"><span class="Apple-converted-space">      </span>+list.map(({p,days})=&gt;`&lt;div class="urg-row ${dlClass(days)}"&gt;&lt;div&gt;&lt;div style="font-size:13px;font-weight:500"&gt;${esc(p.nome)}&lt;/div&gt;&lt;div style="font-size:11px;color:#8b94a8"&gt;${esc(p.cirurgia)}&lt;/div&gt;&lt;/div&gt;&lt;span class="dp ${dlClass(days)}${days&lt;0?' pulse2':''}"&gt;${dlLabel(days)}&lt;/span&gt;&lt;span style="font-size:11px;color:#8b94a8"&gt;${esc(p.convenio||'—')}&lt;/span&gt;&lt;span class="bdg ${sClass(p.status)}" style="font-size:10px"&gt;&lt;span class="bdg-dot"&gt;&lt;/span&gt;${sLabel(p.status)}&lt;/span&gt;&lt;span style="font-size:11px;color:#8b94a8;font-family:'DM Mono',monospace"&gt;${p.deadline}&lt;/span&gt;&lt;/div&gt;`).join('');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>let html=sec('VENCIDAS',items.filter(x=&gt;x.days&lt;0),'<span class="s1">🚨</span>')+sec('PRÓXIMOS 7 DIAS',items.filter(x=&gt;x.days&gt;=0&amp;&amp;x.days&lt;=7),'<span class="s1">⚠️</span>')+sec('PRÓXIMAS SEMANAS',items.filter(x=&gt;x.days&gt;7),'<span class="s1">📅</span>');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!items.length)html='&lt;div class="fc-empty"&gt;Nenhum prazo cadastrado.&lt;/div&gt;';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('fc-grid').innerHTML=`&lt;div style="background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden"&gt;${html}&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p2">function fcToggle(i){fcOpen.has(i)?fcOpen.delete(i):fcOpen.add(i);fcRender();}</p>
+<p class="p2">function fcStartEdit(i){fcEdit.add(i);fcOpen.add(i);fcRender();setTimeout(()=&gt;document.getElementById('fc-card-'+i)?.scrollIntoView({behavior:'smooth',block:'nearest'}),50);}</p>
+<p class="p2">function fcCancelEdit(i){fcEdit.delete(i);fcRender();}</p>
+<p class="p2">async function fcDelete(i){const p=DB[fcTab][i];fcOpen.delete(i);fcEdit.delete(i);DB[fcTab].splice(i,1);fcRender();if(p.id)await fcDeleteFromSheets(p.id);}</p>
+<p class="p2">async function fcSaveEdit(i){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const gv=id=&gt;{const el=document.getElementById(id+'-'+i);return el?el.value:'';};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const starsEl=document.getElementById('ee-stars-'+i);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const p={...DB[fcTab][i],nome:(gv('ee-nome').trim().toUpperCase()||DB[fcTab][i].nome),cirurgia:gv('ee-cirurgia').trim().toUpperCase(),convenio:gv('ee-convenio').trim().toUpperCase(),valor:parseFloat(gv('ee-valor'))||null,status:gv('ee-status'),deadline:gv('ee-deadline'),sabao:gv('ee-sabao'),exames:gv('ee-exames'),orient:gv('ee-orient'),anest:gv('ee-anest'),cardio:gv('ee-cardio'),bactroban:gv('ee-bactroban'),plano:gv('ee-plano').trim(),lembrete:gv('ee-lembrete').trim(),stars:starsEl?parseInt(starsEl.value)||0:0,tab:fcTab};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>DB[fcTab][i]=p;fcEdit.delete(i);fcOpen.add(i);fcRender();await fcSaveToSheets(p);</p>
+<p class="p2">}</p>
+<p class="p2">async function fcAddNew(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const p={nome:'NOVO PACIENTE',cirurgia:'',status:'',convenio:'',valor:null,deadline:'',lembrete:'',sabao:'NÃO ENTREGUE',exames:'NÃO ENTREGUE',orient:'FALTA ENTREGAR',anest:'NÃO ENTREGUE',cardio:'NÃO SE APLICA',bactroban:'NÃO ENTREGUE',plano:'',stars:0,tab:fcTab};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>DB[fcTab].unshift(p);fcOpen.clear();fcEdit.clear();fcOpen.add(0);fcEdit.add(0);fcRender();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>setTimeout(()=&gt;document.getElementById('fc-card-0')?.scrollIntoView({behavior:'smooth',block:'start'}),50);</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">// CALCULADORA DE HONORÁRIOS</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">const HC_IMPOSTOS=0.1529;</p>
+<p class="p2">const HC_TAXAS={debito:0.0156,avista:0.021,parcel26:0.022,parcel712:0.022};</p>
+<p class="p2">const HC_PROCS=[{id:"lca",label:"LCA",icon:"<span class="s1">🦵</span>"},{id:"mpfl",label:"MPFL",icon:"🦿"},{id:"lcm",label:"LCM",icon:"<span class="s1">🦴</span>"},{id:"artro",label:"Artroscopia",icon:"<span class="s1">🔬</span>"},{id:"protese",label:"Prótese (ATJ)",icon:"<span class="s1">⚙️</span>"},{id:"custom",label:"Outro",icon:"<span class="s1">✏️</span>"}];</p>
+<p class="p2">const HC_PGTOS=[{id:"semNota",label:"Sem Nota",taxa:0,icon:"<span class="s1">💵</span>"},{id:"pix",label:"Pix c/ NF",taxa:HC_IMPOSTOS,icon:"<span class="s1">📲</span>"},{id:"debito",label:"Débito",taxa:HC_IMPOSTOS+HC_TAXAS.debito,icon:"<span class="s1">💳</span>"},{id:"avista",label:"Cartão Av.",taxa:HC_IMPOSTOS+HC_TAXAS.avista,icon:"<span class="s1">💳</span>"},{id:"parcel26",label:"Parc. 2–6x",taxa:HC_IMPOSTOS+HC_TAXAS.parcel26,icon:"<span class="s1">💳</span>"},{id:"parcel712",label:"Parc. 7–12x",taxa:HC_IMPOSTOS+HC_TAXAS.parcel712,icon:"<span class="s1">💳</span>"}];</p>
+<p class="p2">const HC_ANEST={claudia:{label:"Dra. Cláudia / Dra. Alessa",val:{artro:1500,lca:2300,protese:3800}},ricardo:{label:"Equipe Dr. Ricardo Reis",val:{artro:1200,lca:2000,protese:3000}}};</p>
+<p class="p2">const HC_EQUIPE={lca:{"Dr. Raphael":1900,"Kelly":300},artro:{"Kelly":200},protese:{"Dr. Raphael":4500,"Kelly":400}};</p>
+<p class="p2">const HC_CUSTOS={lca:{campo:129.19,opas:41.90},artro:{campo:0,opas:0},protese:{campo:129.19,opas:62.85}};</p>
+<p class="p2">const HC_PANEST={lca:"lca",mpfl:"lca",lcm:"lca",artro:"artro",protese:"protese",custom:"lca"};</p>
+<p class="p2">let hcState={proc:null,anestId:null,pagtoMode:"unico",pagtoUnico:null,pagto1:null,pagto2:null};</p>
+<p class="p2">let hcGastos=[],hcGastoCount=0,hcLastCalc=null,hcInited=false;</p>
+<p class="p2">const hcFmt=n=&gt;new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n||0);</p>
+<p class="p2">const hcPct=n=&gt;(n*100).toFixed(2)+"%";</p>
+<p class="p1"><br></p>
+<p class="p2">function initCalc(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(hcInited)return; hcInited=true;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('calc-body').innerHTML=`&lt;style&gt;</p>
+<p class="p2">.hc-wrap{max-width:700px;margin:0 auto;padding:20px 16px 40px;display:flex;flex-direction:column;gap:14px;}</p>
+<p class="p2">.hc-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 2px 12px rgba(73,103,80,.08);border:1px solid rgba(73,103,80,.1);}</p>
+<p class="p2">.hc-card.res{border:2px solid #496750;}</p>
+<p class="p2">.hc-sec{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B9776;margin-bottom:12px;}</p>
+<p class="p2">.hc-pw{display:flex;align-items:center;border:1.5px solid #DBE7DC;border-radius:8px;overflow:hidden;background:#fafaf8;}</p>
+<p class="p2">.hc-pp{padding:0 14px;font-size:15px;color:#5B9776;font-weight:700;background:#DBE7DC;height:48px;display:flex;align-items:center;white-space:nowrap;}</p>
+<p class="p2">.hc-pi{flex:1;border:none;outline:none;padding:0 14px;font-size:17px;color:#222;background:transparent;height:48px;}</p>
+<p class="p2">.hc-cg{display:flex;flex-wrap:wrap;gap:8px;}</p>
+<p class="p2">.hc-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 14px;border-radius:8px;border:1.5px solid #DBE7DC;background:#fafaf8;cursor:pointer;font-size:13px;color:#333;transition:all .15s;min-width:90px;}</p>
+<p class="p2">.hc-chip:hover{border-color:#5B9776;}</p>
+<p class="p2">.hc-chip.active{background:#496750;color:#fff;border-color:#496750;}</p>
+<p class="p2">.hc-chip-sub{font-size:12px;opacity:.7;}</p>
+<p class="p2">.hc-iw{display:flex;align-items:center;border:1.5px solid #DBE7DC;border-radius:8px;overflow:hidden;background:#fafaf8;}</p>
+<p class="p2">.hc-pfx{padding:0 12px;font-size:15px;color:#5B9776;font-weight:700;background:#DBE7DC;height:48px;display:flex;align-items:center;}</p>
+<p class="p2">.hc-mi{flex:1;border:none;outline:none;padding:0 14px;font-size:22px;color:#222;background:transparent;height:48px;}</p>
+<p class="p2">.hc-pb{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid #DBE7DC;margin-bottom:16px;}</p>
+<p class="p2">.hc-pbb{flex:1;padding:9px 0;text-align:center;font-size:12px;font-weight:700;cursor:pointer;background:#fafaf8;color:#496750;border:none;transition:all .15s;}</p>
+<p class="p2">.hc-pbb.active{background:#496750;color:#fff;}</p>
+<p class="p2">.hc-pbb:not(:last-child){border-right:1.5px solid #DBE7DC;}</p>
+<p class="p2">.hc-sr{display:flex;gap:14px;}</p>
+<p class="p2">.hc-sc{flex:1;}</p>
+<p class="p2">.hc-sl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}</p>
+<p class="p2">.hc-pcw{display:flex;align-items:center;border:1.5px solid #DBE7DC;border-radius:8px;overflow:hidden;background:#fafaf8;margin-bottom:10px;}</p>
+<p class="p2">.hc-pcpfx{padding:0 10px;font-size:13px;color:#5B9776;font-weight:700;background:#eef3ef;height:38px;display:flex;align-items:center;}</p>
+<p class="p2">.hc-pci{flex:1;border:none;outline:none;padding:0 10px;font-size:16px;color:#222;background:transparent;height:38px;width:60px;}</p>
+<p class="p2">.hc-ph{font-size:11px;color:#A7A9AB;margin-bottom:8px;}</p>
+<p class="p2">.hc-2c{display:grid;grid-template-columns:1fr 1fr;gap:20px;}</p>
+<p class="p2">.hc-gl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#A7A9AB;margin-bottom:10px;}</p>
+<p class="p2">.hc-fr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;}</p>
+<p class="p2">.hc-fl{font-size:12px;color:#444;flex:1;}</p>
+<p class="p2">.hc-mw{display:flex;align-items:center;border:1px solid #DBE7DC;border-radius:6px;overflow:hidden;background:#fafaf8;}</p>
+<p class="p2">.hc-mp{padding:0 6px;font-size:11px;color:#5B9776;background:#eef3ef;height:32px;display:flex;align-items:center;}</p>
+<p class="p2">.hc-mni{width:85px;border:none;outline:none;padding:0 8px;font-size:13px;color:#222;background:transparent;height:32px;}</p>
+<p class="p2">.hc-hd{flex:1;border:1px solid #DBE7DC;border-radius:6px;padding:0 10px;height:36px;font-size:12px;background:#fafaf8;outline:none;color:#333;}</p>
+<p class="p2">.hc-hr{display:flex;gap:8px;margin-bottom:8px;align-items:center;}</p>
+<p class="p2">.hc-ba{font-size:12px;font-weight:700;background:#DBE7DC;color:#496750;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;}</p>
+<p class="p2">.hc-br{font-size:12px;background:#fde8e8;color:#c0392b;border:none;border-radius:6px;padding:5px 8px;cursor:pointer;font-weight:700;}</p>
+<p class="p2">.hc-bc{margin-top:16px;width:100%;padding:14px 0;background:#496750;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;}</p>
+<p class="p2">.hc-bc:disabled{background:#A7A9AB;cursor:not-allowed;}</p>
+<p class="p2">.hc-cons{background:#496750;border-radius:10px;padding:14px 18px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}</p>
+<p class="p2">.hc-cv{font-size:22px;font-weight:700;}</p>
+<p class="p2">.hc-cl{font-size:12px;opacity:.8;}</p>
+<p class="p2">.hc-bw{display:flex;border-radius:8px;overflow:hidden;height:28px;}</p>
+<p class="p2">.hc-legend{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;}</p>
+<p class="p2">.hc-li{display:flex;align-items:center;gap:4px;font-size:11px;color:#666;}</p>
+<p class="p2">.hc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}</p>
+<p class="p2">.hc-brow{display:flex;justify-content:space-between;font-size:13px;color:#444;}</p>
+<p class="p2">.hc-brow.ded{color:#e07a5f;}</p>
+<p class="p2">.hc-div{border-top:1.5px solid #DBE7DC;margin:4px 0;}</p>
+<p class="p2">.hc-btot{font-size:18px;font-weight:700;margin-top:2px;}</p>
+<p class="p2">.hc-pdf{margin-top:18px;width:100%;padding:12px 0;background:#fff;color:#496750;border:2px solid #496750;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;}</p>
+<p class="p2">.hc-pdf:hover{background:#496750;color:#fff;}</p>
+<p class="p2">.hc-hidden{display:none!important;}</p>
+<p class="p2">&lt;/style&gt;</p>
+<p class="p2">&lt;div class="hc-wrap"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hc-card"&gt;&lt;label class="hc-sec"&gt;<span class="s1">👤</span> Nome do Paciente&lt;/label&gt;&lt;div class="hc-pw"&gt;&lt;span class="hc-pp"&gt;Paciente&lt;/span&gt;&lt;input class="hc-pi" type="text" id="hc-paciente" placeholder="Nome completo"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hc-card"&gt;&lt;label class="hc-sec"&gt;<span class="s8">①</span> Procedimento&lt;/label&gt;&lt;div class="hc-cg" id="hc-chips-proc"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hc-card hc-hidden" id="hc-card-anest"&gt;&lt;label class="hc-sec"&gt;<span class="s8">②</span> Anestesista&lt;/label&gt;&lt;div class="hc-cg" id="hc-chips-anest"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hc-card hc-hidden" id="hc-card-valor"&gt;&lt;label class="hc-sec"&gt;<span class="s8">③</span> Valor Total (R$)&lt;/label&gt;&lt;div class="hc-iw"&gt;&lt;span class="hc-pfx"&gt;R$&lt;/span&gt;&lt;input class="hc-mi" type="number" id="hc-valor" placeholder="0,00"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hc-card hc-hidden" id="hc-card-pagto"&gt;&lt;label class="hc-sec"&gt;<span class="s8">④</span> Forma de Pagamento&lt;/label&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="hc-pb"&gt;&lt;button class="hc-pbb active" id="hc-btn-unico" onclick="hcSetPagtoMode('unico')"&gt;<span class="s1">💳</span> Pagamento Único&lt;/button&gt;&lt;button class="hc-pbb" id="hc-btn-split" onclick="hcSetPagtoMode('split')"&gt;<span class="s1">💳</span> + <span class="s1">💵</span> Duas Formas&lt;/button&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div id="hc-pagto-unico-wrap"&gt;&lt;div class="hc-cg" id="hc-chips-pagto-unico"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div id="hc-pagto-split-wrap" class="hc-hidden"&gt;&lt;div class="hc-sr"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="hc-sc"&gt;&lt;p class="hc-sl" style="color:#496750"&gt;<span class="s1">💳</span> Forma 1&lt;/p&gt;&lt;div class="hc-pcw"&gt;&lt;span class="hc-pcpfx"&gt;%&lt;/span&gt;&lt;input class="hc-pci" type="number" id="hc-pct1" value="50" min="1" max="99" oninput="hcSyncPct(1)"&gt;&lt;/div&gt;&lt;p class="hc-ph" id="hc-hint1"&gt;—&lt;/p&gt;&lt;div class="hc-cg" id="hc-chips-pagto-split1"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="hc-sc"&gt;&lt;p class="hc-sl" style="color:#5B9776"&gt;<span class="s1">💵</span> Forma 2&lt;/p&gt;&lt;div class="hc-pcw"&gt;&lt;span class="hc-pcpfx"&gt;%&lt;/span&gt;&lt;input class="hc-pci" type="number" id="hc-pct2" value="50" min="1" max="99" oninput="hcSyncPct(2)"&gt;&lt;/div&gt;&lt;p class="hc-ph" id="hc-hint2"&gt;—&lt;/p&gt;&lt;div class="hc-cg" id="hc-chips-pagto-split2"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hc-card hc-hidden" id="hc-card-equipe"&gt;&lt;label class="hc-sec"&gt;<span class="s8">⑤</span> Equipe e Custos&lt;/label&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="hc-2c"&gt;&lt;div&gt;&lt;p class="hc-gl"&gt;Equipe Médica&lt;/p&gt;&lt;div id="hc-fields-equipe"&gt;&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;p class="hc-gl"&gt;Materiais&lt;/p&gt;&lt;div id="hc-fields-custos"&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="margin-top:20px"&gt;&lt;div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"&gt;&lt;p class="hc-gl" style="margin:0"&gt;<span class="s1">🏥</span> Gastos Hospitalares&lt;/p&gt;&lt;button class="hc-ba" onclick="hcAddGasto()"&gt;+ Adicionar&lt;/button&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div id="hc-gastos-lista"&gt;&lt;p style="font-size:12px;color:#A7A9AB" id="hc-hosp-empty"&gt;Nenhum gasto hospitalar.&lt;/p&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="hc-hidden" id="hc-hosp-total-wrap" style="text-align:right;font-size:12px;color:#496750;font-weight:700;margin-top:4px"&gt;Total: &lt;span id="hc-hosp-total-val"&gt;&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="hc-bc" id="hc-btn-calc" onclick="hcCalcular()"&gt;Calcular Honorários <span class="s2">→</span>&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hc-card res hc-hidden" id="hc-card-resultado"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px"&gt;&lt;span style="font-size:17px;font-weight:700;color:#496750" id="hc-res-proc"&gt;&lt;/span&gt;&lt;div style="display:flex;gap:6px;flex-wrap:wrap" id="hc-res-badges"&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="hc-cons"&gt;&lt;div&gt;&lt;p class="hc-cl"&gt;Honorário Líquido Total&lt;/p&gt;&lt;p class="hc-cv" id="hc-cons-val"&gt;&lt;/p&gt;&lt;/div&gt;&lt;div style="text-align:right"&gt;&lt;p class="hc-cl"&gt;Margem sobre bruto&lt;/p&gt;&lt;p style="font-size:11px;opacity:.7" id="hc-cons-marg"&gt;&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div id="hc-res-detalhe"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="hc-bw" id="hc-bar"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="hc-legend" id="hc-legend"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="hc-pdf" onclick="hcExportarPDF()"&gt;<span class="s1">🖨️</span> Exportar Resumo em PDF&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>HC_PROCS.forEach(p=&gt;{const b=document.createElement('button');b.className='hc-chip';b.innerHTML=p.icon+' '+p.label;b.onclick=()=&gt;hcSelProc(p.id);document.getElementById('hc-chips-proc').appendChild(b);});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>Object.entries(HC_ANEST).forEach(([id,a])=&gt;{const b=document.createElement('button');b.className='hc-chip';b.style.cssText='align-items:flex-start;min-width:180px;padding:10px 14px;';b.id='hc-chip-anest-'+id;b.innerHTML=`&lt;span style="font-weight:700"&gt;${a.label}&lt;/span&gt;&lt;span style="font-size:11px;opacity:.75;margin-top:2px" id="hc-av-${id}"&gt;&lt;/span&gt;`;b.onclick=()=&gt;hcSelAnest(id);document.getElementById('hc-chips-anest').appendChild(b);});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const bM=document.createElement('button');bM.className='hc-chip active';bM.id='hc-chip-anest-manual';bM.innerHTML='<span class="s1">✏️</span> Outro / Manual';bM.onclick=()=&gt;hcSelAnest(null);document.getElementById('hc-chips-anest').appendChild(bM);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>['unico','split1','split2'].forEach(mode=&gt;{const c=document.getElementById('hc-chips-pagto-'+mode);HC_PGTOS.forEach(p=&gt;{const b=document.createElement('button');b.className='hc-chip';b.id='hc-chip-pagto-'+mode+'-'+p.id;b.innerHTML=p.icon+' '+p.label+'&lt;span class="hc-chip-sub"&gt;'+(p.taxa&gt;0?'-'+hcPct(p.taxa):'s/ desc.')+'&lt;/span&gt;';b.onclick=()=&gt;hcSelPgtoMode(mode,p.id);c.appendChild(b);});});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('hc-valor').addEventListener('input',()=&gt;{hcHideRes();hcUpdHints();hcShowCard('hc-card-pagto',document.getElementById('hc-valor').value!=='');});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('hc-btn-calc').disabled=true;</p>
+<p class="p2">}</p>
+<p class="p2">function hcShowCard(id,show){const el=document.getElementById(id);if(el)el.classList.toggle('hc-hidden',!show);}</p>
+<p class="p2">function hcHideRes(){hcShowCard('hc-card-resultado',false);}</p>
+<p class="p2">function hcSelProc(id){hcState.proc=id;document.querySelectorAll('#hc-chips-proc .hc-chip').forEach((b,i)=&gt;{b.classList.toggle('active',HC_PROCS[i].id===id);});const g=HC_PANEST[id]||'lca';Object.entries(HC_ANEST).forEach(([aid,a])=&gt;{const el=document.getElementById('hc-av-'+aid);if(el)el.textContent=hcFmt(a.val[g]);});hcShowCard('hc-card-anest',true);hcShowCard('hc-card-valor',true);hcShowCard('hc-card-pagto',false);hcShowCard('hc-card-equipe',false);hcHideRes();hcUpdEquipe();}</p>
+<p class="p2">function hcSelAnest(id){hcState.anestId=id;document.querySelectorAll("[id^='hc-chip-anest-']").forEach(b=&gt;b.classList.remove('active'));document.getElementById(id?'hc-chip-anest-'+id:'hc-chip-anest-manual').classList.add('active');hcUpdEquipe();hcHideRes();}</p>
+<p class="p2">function hcSetPagtoMode(mode){hcState.pagtoMode=mode;document.getElementById('hc-btn-unico').classList.toggle('active',mode==='unico');document.getElementById('hc-btn-split').classList.toggle('active',mode==='split');document.getElementById('hc-pagto-unico-wrap').classList.toggle('hc-hidden',mode==='split');document.getElementById('hc-pagto-split-wrap').classList.toggle('hc-hidden',mode==='unico');hcUpdHints();hcHideRes();hcUpdBtnCalc();}</p>
+<p class="p2">function hcSelPgtoMode(mode,id){if(mode==='unico')hcState.pagtoUnico=id;else if(mode==='split1')hcState.pagto1=id;else hcState.pagto2=id;document.querySelectorAll("[id^='hc-chip-pagto-"+mode+"-']").forEach(b=&gt;b.classList.remove('active'));document.getElementById('hc-chip-pagto-'+mode+'-'+id).classList.add('active');hcShowCard('hc-card-equipe',hcPagtoReady());hcHideRes();hcUpdBtnCalc();}</p>
+<p class="p2">function hcPagtoReady(){return hcState.pagtoMode==='unico'?!!hcState.pagtoUnico:!!(hcState.pagto1&amp;&amp;hcState.pagto2);}</p>
+<p class="p2">function hcUpdBtnCalc(){const b=document.getElementById('hc-btn-calc');if(b)b.disabled=!hcPagtoReady();}</p>
+<p class="p2">function hcSyncPct(c){const o=c===1?2:1,v=Math.min(99,Math.max(1,parseInt(document.getElementById('hc-pct'+c).value)||0));document.getElementById('hc-pct'+c).value=v;document.getElementById('hc-pct'+o).value=100-v;hcUpdHints();hcHideRes();}</p>
+<p class="p2">function hcUpdHints(){const bruto=parseFloat(document.getElementById('hc-valor').value)||0;if(!bruto||hcState.pagtoMode!=='split'){document.getElementById('hc-hint1').textContent='—';document.getElementById('hc-hint2').textContent='—';return;}const p1=parseInt(document.getElementById('hc-pct1').value)||0;document.getElementById('hc-hint1').textContent=hcFmt(bruto*p1/100);document.getElementById('hc-hint2').textContent=hcFmt(bruto*(100-p1)/100);}</p>
+<p class="p2">function hcUpdEquipe(){if(!hcState.proc)return;const id=hcState.proc,g=HC_PANEST[id]||'lca';const fe=document.getElementById('hc-fields-equipe'),fc=document.getElementById('hc-fields-custos');if(!fe||!fc)return;fe.innerHTML='';fc.innerHTML='';const base={...(HC_EQUIPE[g]||{})};const aL=hcState.anestId?HC_ANEST[hcState.anestId].label:'Anestesista';const aV=hcState.anestId?HC_ANEST[hcState.anestId].val[g]:0;base[aL]=aV;Object.entries(base).forEach(([l,v])=&gt;fe.appendChild(hcMkField(l,v,'eq_'+l.replace(/\s/g,'_'))));const custos=HC_CUSTOS[g]||{campo:0,opas:0};Object.entries(custos).forEach(([k,v])=&gt;fc.appendChild(hcMkField({campo:"Campo Cirúrgico",opas:"OPAS"}[k],v,'cu_'+k)));}</p>
+<p class="p2">function hcMkField(label,val,id){const div=document.createElement('div');div.className='hc-fr';div.innerHTML=`&lt;span class="hc-fl"&gt;${label}&lt;/span&gt;&lt;div class="hc-mw"&gt;&lt;span class="hc-mp"&gt;R$&lt;/span&gt;&lt;input class="hc-mni" type="number" id="hc-field-${id}" value="${val}"&gt;&lt;/div&gt;`;return div;}</p>
+<p class="p2">function hcAddGasto(){const id=hcGastoCount++;hcGastos.push({id,descricao:'',valor:''});document.getElementById('hc-hosp-empty').style.display='none';const lista=document.getElementById('hc-gastos-lista');const row=document.createElement('div');row.className='hc-hr';row.id='hc-gasto-row-'+id;row.innerHTML=`&lt;input class="hc-hd" type="text" placeholder="Descrição" oninput="hcUpdGasto(${id},'descricao',this.value)"&gt;&lt;div class="hc-mw"&gt;&lt;span class="hc-mp"&gt;R$&lt;/span&gt;&lt;input class="hc-mni" type="number" placeholder="0,00" style="width:90px" oninput="hcUpdGasto(${id},'valor',this.value)"&gt;&lt;/div&gt;&lt;button class="hc-br" onclick="hcRemGasto(${id})"&gt;<span class="s7">✕</span>&lt;/button&gt;`;lista.appendChild(row);document.getElementById('hc-hosp-total-wrap').classList.remove('hc-hidden');}</p>
+<p class="p2">function hcUpdGasto(id,f,v){const g=hcGastos.find(x=&gt;x.id===id);if(g)g[f]=v;const t=hcGastos.reduce((a,g)=&gt;a+(parseFloat(g.valor)||0),0);document.getElementById('hc-hosp-total-val').textContent=hcFmt(t);}</p>
+<p class="p2">function hcRemGasto(id){hcGastos=hcGastos.filter(x=&gt;x.id!==id);const r=document.getElementById('hc-gasto-row-'+id);if(r)r.remove();if(!hcGastos.length){document.getElementById('hc-hosp-empty').style.display='';document.getElementById('hc-hosp-total-wrap').classList.add('hc-hidden');}}</p>
+<p class="p2">function hcCalcParcela(bruto,pgId){const imp=pgId==='semNota'?0:bruto*HC_IMPOSTOS;const cart=['debito','avista','parcel26','parcel712'].includes(pgId)?bruto*HC_TAXAS[pgId]:0;return{bruto,imposto:imp,cartao:cart,liquido:bruto-imp-cart};}</p>
+<p class="p2">function hcCalcular(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const brutoTotal=parseFloat(document.getElementById('hc-valor').value)||0;if(!brutoTotal)return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>let te=0,tc=0;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.querySelectorAll("[id^='hc-field-eq_']").forEach(i=&gt;te+=parseFloat(i.value)||0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.querySelectorAll("[id^='hc-field-cu_']").forEach(i=&gt;tc+=parseFloat(i.value)||0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const th=hcGastos.reduce((a,g)=&gt;a+(parseFloat(g.valor)||0),0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>let r;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(hcState.pagtoMode==='unico'){const pr=hcCalcParcela(brutoTotal,hcState.pagtoUnico);const pg=HC_PGTOS.find(p=&gt;p.id===hcState.pagtoUnico);r={mode:'unico',bruto:brutoTotal,pg,parcelas:[{...pr,label:''}],totalEquipe:te,totalCustos:tc,totalHosp:th,liquidoTotal:pr.liquido-te-tc-th};}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>else{const p1=parseInt(document.getElementById('hc-pct1').value)||50,p2=100-p1;const b1=brutoTotal*p1/100,b2=brutoTotal*p2/100;const r1=hcCalcParcela(b1,hcState.pagto1),r2=hcCalcParcela(b2,hcState.pagto2);const pg1=HC_PGTOS.find(p=&gt;p.id===hcState.pagto1),pg2=HC_PGTOS.find(p=&gt;p.id===hcState.pagto2);r={mode:'split',bruto:brutoTotal,p1,p2,pg1,pg2,parcelas:[{...r1,label:'Forma 1 ('+p1+'%) — '+pg1.label},{...r2,label:'Forma 2 ('+p2+'%) — '+pg2.label}],totalEquipe:te,totalCustos:tc,totalHosp:th,liquidoTotal:r1.liquido+r2.liquido-te-tc-th};}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>hcLastCalc=r;hcRenderRes(r);</p>
+<p class="p2">}</p>
+<p class="p2">function hcRenderRes(r){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const procSel=HC_PROCS.find(p=&gt;p.id===hcState.proc);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('hc-res-proc').textContent=(procSel?.icon||'')+' '+(procSel?.label||'');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const badges=document.getElementById('hc-res-badges');badges.innerHTML='';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(r.mode==='unico'){const b=document.createElement('span');b.style.cssText='font-size:11px;background:#DBE7DC;color:#496750;padding:3px 10px;border-radius:20px;font-weight:700;';b.textContent=r.pg.label;badges.appendChild(b);}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>else{[r.pg1,r.pg2].forEach((pg,i)=&gt;{const b=document.createElement('span');b.style.cssText='font-size:11px;background:'+(i===0?'#DBE7DC':'#e8f4ee')+';color:'+(i===0?'#496750':'#2e7d52')+';padding:3px 10px;border-radius:20px;font-weight:700;';b.textContent=(i===0?r.p1:r.p2)+'% '+pg.label;badges.appendChild(b);});}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('hc-cons-val').textContent=hcFmt(r.liquidoTotal);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('hc-cons-val').style.color=r.liquidoTotal&gt;=0?'#fff':'#ffb3a7';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('hc-cons-marg').textContent=hcPct(r.liquidoTotal/r.bruto);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const det=document.getElementById('hc-res-detalhe');det.innerHTML='';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const addRow=(c,l,v,cls)=&gt;{const d=document.createElement('div');d.className='hc-brow'+(cls?' '+cls:'');d.innerHTML=`&lt;span&gt;${l}&lt;/span&gt;&lt;span&gt;${v}&lt;/span&gt;`;c.appendChild(d);};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const bd=document.createElement('div');bd.style.cssText='display:flex;flex-direction:column;gap:6px;margin-bottom:12px';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(r.mode==='unico'){addRow(bd,'Valor Bruto',hcFmt(r.bruto));if(r.parcelas[0].imposto&gt;0)addRow(bd,'Impostos','− '+hcFmt(r.parcelas[0].imposto),'ded');if(r.parcelas[0].cartao&gt;0)addRow(bd,'Taxa Cartão','− '+hcFmt(r.parcelas[0].cartao),'ded');}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(r.totalEquipe&gt;0)addRow(bd,'Equipe Médica','− '+hcFmt(r.totalEquipe),'ded');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(r.totalCustos&gt;0)addRow(bd,'Materiais / OPAS','− '+hcFmt(r.totalCustos),'ded');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(r.totalHosp&gt;0)addRow(bd,'Gastos Hospitalares','− '+hcFmt(r.totalHosp),'ded');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>det.appendChild(bd);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const ti=r.parcelas.reduce((a,p)=&gt;a+p.imposto,0),tc2=r.parcelas.reduce((a,p)=&gt;a+p.cartao,0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const segs=[{l:'Líquido',v:Math.max(0,r.liquidoTotal),c:'#496750'},{l:'Equipe',v:r.totalEquipe,c:'#81BBA1'},{l:'Impostos',v:ti,c:'#e07a5f'},{l:'Cartão',v:tc2,c:'#f4a261'},{l:'Materiais',v:r.totalCustos,c:'#A7A9AB'},{l:'Hosp.',v:r.totalHosp,c:'#8e44ad'}];</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const bw=document.getElementById('hc-bar');bw.innerHTML='';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>segs.forEach(s=&gt;{const w=(s.v/r.bruto*100).toFixed(1);if(parseFloat(w)&gt;0){const d=document.createElement('div');d.style.cssText=`width:${w}%;background:${s.c};display:flex;align-items:center;justify-content:center`;d.title=s.l+': '+hcFmt(s.v);if(parseFloat(w)&gt;8)d.innerHTML=`&lt;span style="font-size:10px;color:#fff;font-weight:700"&gt;${w}%&lt;/span&gt;`;bw.appendChild(d);}});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const lg=document.getElementById('hc-legend');lg.innerHTML='';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>segs.forEach(s=&gt;{const sp=document.createElement('span');sp.className='hc-li';sp.innerHTML=`&lt;span class="hc-dot" style="background:${s.c}"&gt;&lt;/span&gt;${s.l}`;lg.appendChild(sp);});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>hcShowCard('hc-card-resultado',true);document.getElementById('hc-card-resultado').scrollIntoView({behavior:'smooth',block:'nearest'});</p>
+<p class="p2">}</p>
+<p class="p2">function hcExportarPDF(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!hcLastCalc){alert('Calcule os honorários primeiro.');return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const r=hcLastCalc, paciente=document.getElementById('hc-paciente').value.trim()||'Não informado';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const procSel=HC_PROCS.find(p=&gt;p.id===hcState.proc);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const data=new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const pagtoStr=r.mode==='unico'?r.pg.label:r.p1+'% '+r.pg1.label+' + '+r.p2+'% '+r.pg2.label;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const html=`&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;title&gt;Honorários — ${paciente}&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,Arial,sans-serif;padding:36px 44px;max-width:680px;margin:0 auto;color:#222}.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px}.cv{font-size:26px;color:#496750;font-weight:900;letter-spacing:-4px}.cons{background:#496750;border-radius:10px;padding:14px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:18px 0}.bp{display:block;margin:20px auto 0;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}@media print{.bp{display:none}}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hdr"&gt;&lt;div style="display:flex;align-items:center;gap:10px"&gt;&lt;span class="cv"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;div&gt;&lt;div style="font-size:17px;font-weight:700;color:#496750"&gt;Dr. Marcelo Tostes&lt;/div&gt;&lt;div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase"&gt;Ortopedia · Cirurgia do Joelho / Esporte&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div style="text-align:right;font-size:11px;color:#888;line-height:1.8"&gt;&lt;strong&gt;RESUMO DE HONORÁRIOS&lt;/strong&gt;&lt;br&gt;${data}&lt;br&gt;CRM-SP 120.317&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;p style="font-size:18px;font-weight:700;color:#496750;margin-bottom:16px"&gt;<span class="s1">👤</span> ${paciente}&lt;/p&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;table style="width:100%;border-collapse:collapse;border:1px solid #eee;margin-bottom:16px"&gt;&lt;tr&gt;&lt;td style="padding:6px 10px;color:#666"&gt;Procedimento&lt;/td&gt;&lt;td style="padding:6px 10px;font-weight:600"&gt;${procSel?.icon||''} ${procSel?.label||'—'}&lt;/td&gt;&lt;/tr&gt;&lt;tr style="background:#fafafa"&gt;&lt;td style="padding:6px 10px;color:#666"&gt;Valor Bruto&lt;/td&gt;&lt;td style="padding:6px 10px;font-weight:600"&gt;${hcFmt(r.bruto)}&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td style="padding:6px 10px;color:#666"&gt;Pagamento&lt;/td&gt;&lt;td style="padding:6px 10px;font-weight:600"&gt;${pagtoStr}&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="cons"&gt;&lt;div&gt;&lt;p style="font-size:11px;opacity:.8"&gt;Honorário Líquido Total&lt;/p&gt;&lt;p style="font-size:22px;font-weight:700"&gt;${hcFmt(r.liquidoTotal)}&lt;/p&gt;&lt;/div&gt;&lt;div style="text-align:right"&gt;&lt;p style="font-size:11px;opacity:.8"&gt;Margem&lt;/p&gt;&lt;p style="font-size:16px;font-weight:700"&gt;${hcPct(r.liquidoTotal/r.bruto)}&lt;/p&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;button class="bp" onclick="window.print()"&gt;<span class="s1">🖨️</span> Salvar como PDF (Cmd+P)&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div style="margin-top:22px;border-top:1px solid #DBE7DC;padding-top:10px;display:flex;justify-content:space-between;font-size:10px;color:#aaa"&gt;&lt;span&gt;www.drmarcelotostes.com&lt;/span&gt;&lt;span&gt;Uso interno&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/body&gt;&lt;/html&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='honorarios_'+paciente.replace(/\s+/g,'_')+'.html';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=&gt;URL.revokeObjectURL(url),1000);</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">// ATENDIMENTOS DO DIA</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">let atendList=[], atendInited=false;</p>
+<p class="p2">const ATEND_TIPOS=[{id:'primeira',label:'Primeira Consulta',icon:'<span class="s1">🆕</span>',cobra:true},{id:'nova',label:'Nova Consulta',icon:'<span class="s1">📋</span>',cobra:true},{id:'retorno',label:'Retorno',icon:'<span class="s1">🔄</span>',cobra:false}];</p>
+<p class="p2">const ATEND_PROCS=[{id:'viscokd',label:'Viscosuplementação KD',icon:'<span class="s1">💉</span>',valorBase:2100},{id:'viscoreviscon',label:'Viscosuplementação Reviscon',icon:'<span class="s1">💉</span>',valorBase:2100},{id:'artrocentese',label:'Artrocentese',icon:'<span class="s1">🔬</span>',valorBase:200},{id:'triancil',label:'Infiltração Triancil',icon:'<span class="s1">💊</span>',valorBase:600}];</p>
+<p class="p2">const ATEND_PGTO=[{id:'dinheiro',label:'Dinheiro',icon:'<span class="s1">💵</span>'},{id:'pix',label:'Pix',icon:'<span class="s1">📲</span>'},{id:'credito',label:'Crédito',icon:'<span class="s1">💳</span>'},{id:'debito',label:'Débito',icon:'<span class="s1">💳</span>'},{id:'cheque',label:'Cheque',icon:'<span class="s1">📄</span>'},{id:'duas',label:'Duas Formas',icon:'<span class="s1">🔀</span>'}];</p>
+<p class="p2">const atFmt=n=&gt;new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n||0);</p>
+<p class="p2">const atToday=()=&gt;new Date().toISOString().split('T')[0];</p>
+<p class="p1"><br></p>
+<p class="p2">async function atLoadFromSheets(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>syncStart('at-sync-icon');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>try {</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const res=await apiGet('atendimentos');if(res.error)throw new Error(res.error);</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const today=atToday();</p>
+<p class="p2"><span class="Apple-converted-space">    </span>atendList=(res.rows||[]).filter(r=&gt;r.data===today).map(r=&gt;({</p>
+<p class="p2"><span class="Apple-converted-space">      </span>id:r.id, data:r.data, nome:r.nome||'', tipo:r.tipo||'',</p>
+<p class="p2"><span class="Apple-converted-space">      </span>consulta_valor:parseFloat(r.consulta_valor)||700,</p>
+<p class="p2"><span class="Apple-converted-space">      </span>consulta_nf:r.consulta_nf==='TRUE'||r.consulta_nf===true||r.consulta_nf==='true',</p>
+<p class="p2"><span class="Apple-converted-space">      </span>pgto:{modo:r.pgto_modo||'',tipo1:r.pgto_tipo1||'',tipo2:r.pgto_tipo2||'',parcelas1:parseInt(r.pgto_parcelas1)||1,parcelas2:parseInt(r.pgto_parcelas2)||1,valor1:parseFloat(r.pgto_valor1)||0,valor2:parseFloat(r.pgto_valor2)||0},</p>
+<p class="p2"><span class="Apple-converted-space">      </span>procs:Array.isArray(r.procs)?r.procs:(r.procs?JSON.parse(r.procs):[]),</p>
+<p class="p2"><span class="Apple-converted-space">      </span>salvo:true</p>
+<p class="p2"><span class="Apple-converted-space">    </span>}));</p>
+<p class="p2"><span class="Apple-converted-space">    </span>atRenderAll();showToast('<span class="s1">✅</span> Atendimentos sincronizados!');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>} catch(e){showToast('Erro: '+e.message,true);}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>syncEnd('at-sync-icon');</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">async function atSaveToSheets(a){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const res=await apiSave('atendimentos',{id:a.id,data:a.data||atToday(),nome:a.nome,tipo:a.tipo,consulta_valor:a.consulta_valor,consulta_nf:a.consulta_nf,pgto_modo:a.pgto.modo,pgto_tipo1:a.pgto.tipo1,pgto_tipo2:a.pgto.tipo2,pgto_parcelas1:a.pgto.parcelas1,pgto_parcelas2:a.pgto.parcelas2,pgto_valor1:a.pgto.valor1,pgto_valor2:a.pgto.valor2,procs:JSON.stringify(a.procs||[])});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(res.ok)a.id=res.id;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function initAtend(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(atendInited){atRenderAll();return;} atendInited=true;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const now=new Date();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('atend-data-sub').textContent=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('atend-body').innerHTML=`&lt;style&gt;</p>
+<p class="p2">.at-wrap{max-width:780px;margin:0 auto;padding:16px 16px 60px;}</p>
+<p class="p2">.at-topbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;}</p>
+<p class="p2">.at-btn-add{display:flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;border:none;background:#496750;color:#DBE7DC;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;}</p>
+<p class="p2">.at-btn-res{display:flex;align-items:center;gap:7px;padding:10px 20px;border-radius:10px;border:2px solid #496750;background:transparent;color:#81BBA1;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;}</p>
+<p class="p2">.at-empty{text-align:center;padding:60px 20px;color:#8b94a8;}</p>
+<p class="p2">.at-cards{display:flex;flex-direction:column;gap:10px;}</p>
+<p class="p2">.at-card{background:#161b25;border:1px solid #2a3347;border-radius:14px;overflow:hidden;}</p>
+<p class="p2">.at-card-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#1a2133;}</p>
+<p class="p2">.at-num{width:28px;height:28px;border-radius:50%;background:#496750;color:#DBE7DC;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}</p>
+<p class="p2">.at-nome{font-weight:600;font-size:14px;flex:1;}</p>
+<p class="p2">.at-total-bdg{font-family:'DM Mono',monospace;font-size:13px;color:#81BBA1;font-weight:600;margin-left:auto;}</p>
+<p class="p2">.at-del-btn{background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.25);color:#e05252;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}</p>
+<p class="p2">.at-form{padding:18px 18px 16px;}</p>
+<p class="p2">.at-section{margin-bottom:18px;}</p>
+<p class="p2">.at-section-title{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#5B9776;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(91,151,118,.15);}</p>
+<p class="p2">.at-row{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;}</p>
+<p class="p2">.at-field{display:flex;flex-direction:column;gap:5px;}</p>
+<p class="p2">.at-field label{font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;font-weight:500;}</p>
+<p class="p2">.at-field input,.at-field select{background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}</p>
+<p class="p2">.at-field.grow{flex:1;}</p>
+<p class="p2">.at-chips{display:flex;flex-wrap:wrap;gap:7px;}</p>
+<p class="p2">.at-chip{padding:6px 13px;border-radius:7px;border:1.5px solid #2a3347;background:#1e2535;color:#8b94a8;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap;}</p>
+<p class="p2">.at-chip.sel{background:#496750;color:#DBE7DC;border-color:#496750;}</p>
+<p class="p2">.at-nf-toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:#8b94a8;cursor:pointer;user-select:none;margin-top:8px;}</p>
+<p class="p2">.at-nf-toggle input{accent-color:#5B9776;width:15px;height:15px;cursor:pointer;}</p>
+<p class="p2">.at-nf-toggle.on{color:#81BBA1;}</p>
+<p class="p2">.at-proc-list{display:flex;flex-direction:column;gap:8px;}</p>
+<p class="p2">.at-proc-item{background:#1a2133;border:1px solid #2a3347;border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;}</p>
+<p class="p2">.at-proc-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}</p>
+<p class="p2">.at-proc-del{background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.2);color:#e05252;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}</p>
+<p class="p2">.at-add-proc{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;border:1.5px dashed #2a3347;background:transparent;color:#8b94a8;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;margin-top:6px;}</p>
+<p class="p2">.at-split-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}</p>
+<p class="p2">.at-split-section{background:#1a2133;border-radius:8px;padding:10px 12px;border:1px solid #2a3347;}</p>
+<p class="p2">.at-split-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#5B9776;font-weight:700;margin-bottom:8px;}</p>
+<p class="p2">.at-summary-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;}</p>
+<p class="p2">.at-summary-box{background:#161b25;border:1px solid #2a3347;border-radius:16px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;padding:28px 28px 24px;}</p>
+<p class="p2">.at-summary-pdf-btn{width:100%;padding:11px 0;background:transparent;border:2px solid #496750;color:#81BBA1;border-radius:10px;font-size:14px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer;margin-top:16px;}</p>
+<p class="p2">&lt;/style&gt;</p>
+<p class="p2">&lt;div class="at-wrap"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="at-topbar"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="at-btn-add" onclick="atAddPaciente()"&gt;<span class="s5">＋</span> Adicionar Paciente&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="at-btn-res" onclick="atShowResumo()"&gt;<span class="s1">📊</span> Resumo do Dia&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div id="at-cards" class="at-cards"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div id="at-empty" class="at-empty"&gt;&lt;div style="font-size:48px;margin-bottom:16px"&gt;<span class="s1">📋</span>&lt;/div&gt;&lt;p style="font-size:15px;font-weight:600;margin-bottom:6px"&gt;Nenhum atendimento registrado&lt;/p&gt;&lt;p style="font-size:13px"&gt;Clique em "Adicionar Paciente" ou "Sincronizar"&lt;/p&gt;&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>atLoadFromSheets();</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function atGet(id){return atendList.find(a=&gt;a.id===id);}</p>
+<p class="p2">function atCalcTotal(a){const ti=ATEND_TIPOS.find(t=&gt;t.id===a.tipo);const c=!ti||ti.cobra!==false;let t=c?(a.consulta_valor||0):0;(a.procs||[]).forEach(p=&gt;t+=(p.valor||0));return t;}</p>
+<p class="p2">function atPgtoLabel(a){const pg=a.pgto;if(!pg||!pg.modo)return'—';if(pg.modo==='duas')return`${atFmt(pg.valor1||0)} ${atPgtoItemLabel(pg.tipo1,pg.parcelas1)} + ${atFmt(pg.valor2||0)} ${atPgtoItemLabel(pg.tipo2,pg.parcelas2)}`;return atPgtoItemLabel(pg.modo,pg.parcelas1);}</p>
+<p class="p2">function atPgtoItemLabel(tipo,parc){const m={dinheiro:'Dinheiro',pix:'Pix',credito:'Crédito',debito:'Débito',cheque:'Cheque'};let l=m[tipo]||tipo;if(tipo==='credito'&amp;&amp;parc&gt;1)l+=` ${parc}x`;return l;}</p>
+<p class="p2">function atPgtoHTML(a){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const pg=a.pgto;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const chips=ATEND_PGTO.map(t=&gt;`&lt;button class="at-chip${pg.modo===t.id?' sel':''}" onclick="atUpdPgto('${a.id}','modo','${t.id}')"&gt;${t.icon} ${t.label}&lt;/button&gt;`).join('');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>let extra='';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(pg.modo==='credito'){extra=`&lt;div style="margin-top:10px;display:flex;align-items:center;gap:10px"&gt;&lt;span style="font-size:12px;color:#8b94a8"&gt;Parcelas:&lt;/span&gt;&lt;select onchange="atUpdPgto('${a.id}','parcelas1',parseInt(this.value))" style="background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:70px"&gt;${[1,2,3,4,5,6,7,8,9,10,11,12].map(n=&gt;`&lt;option value="${n}"${pg.parcelas1===n?'selected':''}&gt;${n}x&lt;/option&gt;`).join('')}&lt;/select&gt;&lt;/div&gt;`;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>else if(pg.modo==='duas'){const tipos2=ATEND_PGTO.filter(t=&gt;t.id!=='duas');extra=`&lt;div class="at-split-grid"&gt;&lt;div class="at-split-section"&gt;&lt;div class="at-split-lbl"&gt;Forma 1&lt;/div&gt;&lt;div class="at-field" style="margin-bottom:8px"&gt;&lt;label&gt;Valor (R$)&lt;/label&gt;&lt;input type="number" value="${pg.valor1||0}" oninput="atSyncValor('${a.id}',1,this.value)" style="width:120px;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"&gt;&lt;/div&gt;&lt;div class="at-chips"&gt;${tipos2.map(t=&gt;`&lt;button class="at-chip${pg.tipo1===t.id?' sel':''}" onclick="atUpdPgto('${a.id}','tipo1','${t.id}')" style="font-size:11px;padding:4px 9px"&gt;${t.icon} ${t.label}&lt;/button&gt;`).join('')}&lt;/div&gt;&lt;/div&gt;&lt;div class="at-split-section"&gt;&lt;div class="at-split-lbl"&gt;Forma 2&lt;/div&gt;&lt;div class="at-field" style="margin-bottom:8px"&gt;&lt;label&gt;Valor (R$)&lt;/label&gt;&lt;input type="number" value="${pg.valor2||0}" oninput="atSyncValor('${a.id}',2,this.value)" style="width:120px;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"&gt;&lt;/div&gt;&lt;div class="at-chips"&gt;${tipos2.map(t=&gt;`&lt;button class="at-chip${pg.tipo2===t.id?' sel':''}" onclick="atUpdPgto('${a.id}','tipo2','${t.id}')" style="font-size:11px;padding:4px 9px"&gt;${t.icon} ${t.label}&lt;/button&gt;`).join('')}&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;`;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return`&lt;div class="at-chips"&gt;${chips}&lt;/div&gt;${extra}`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function atCardHTML(a,num){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tipoLabel=ATEND_TIPOS.find(t=&gt;t.id===a.tipo)?.label||'—';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const total=atCalcTotal(a);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(a.salvo){</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const tipoColors={primeira:'#81BBA1',nova:'#5b8fe8',retorno:'#e8b84b'};</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const cor=tipoColors[a.tipo]||'#8b94a8';</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const procsStr=a.procs.length?(a.procs.map(p=&gt;{const inf=ATEND_PROCS.find(pr=&gt;pr.id===p.tipo);return inf?inf.label:'?';}).join(' · ')):'Apenas consulta';</p>
+<p class="p2"><span class="Apple-converted-space">    </span>return `&lt;div class="at-card" id="at-card-${a.id}"&gt;&lt;div class="at-card-hdr"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="at-num" style="background:#1e2535;color:#81BBA1;border:1.5px solid #496750"&gt;${num}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div style="flex:1"&gt;&lt;div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"&gt;&lt;span style="font-weight:700;font-size:14px"&gt;${a.nome||'Paciente'}&lt;/span&gt;&lt;span style="font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600;background:rgba(73,103,80,.2);color:${cor};border:1px solid ${cor}40"&gt;${tipoLabel}&lt;/span&gt;&lt;/div&gt;&lt;div style="font-size:11px;color:#8b94a8;margin-top:3px"&gt;${procsStr}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"&gt;&lt;span style="font-family:'DM Mono',monospace;font-size:15px;color:#81BBA1;font-weight:700"&gt;${atFmt(total)}&lt;/span&gt;&lt;span style="font-size:11px;color:#8b94a8"&gt;${atPgtoLabel(a)}&lt;/span&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div style="display:flex;gap:6px;margin-left:12px"&gt;&lt;button class="at-del-btn" style="background:rgba(91,151,118,.12);border-color:rgba(91,151,118,.3);color:#81BBA1" onclick="atEditar('${a.id}')"&gt;<span class="s1">✏️</span>&lt;/button&gt;&lt;button class="at-del-btn" onclick="atDel('${a.id}')"&gt;<span class="s7">✕</span>&lt;/button&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>return `&lt;div class="at-card" id="at-card-${a.id}" style="border-color:#496750"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="at-card-hdr"&gt;&lt;div class="at-num"&gt;${num}&lt;/div&gt;&lt;div class="at-nome"&gt;${a.nome||'&lt;span style="color:#8b94a8;font-weight:400"&gt;Novo Paciente&lt;/span&gt;'}&lt;/div&gt;${a.tipo?`&lt;span style="font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(91,151,118,.2);color:#81BBA1;border:1px solid rgba(91,151,118,.4)"&gt;${tipoLabel}&lt;/span&gt;`:''}&lt;div class="at-total-bdg"&gt;${atFmt(total)}&lt;/div&gt;&lt;button class="at-del-btn" onclick="atDel('${a.id}')"&gt;<span class="s7">✕</span>&lt;/button&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="at-form"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="at-section"&gt;&lt;div class="at-section-title"&gt;Dados do Paciente&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="at-row"&gt;&lt;div class="at-field grow"&gt;&lt;label&gt;Nome&lt;/label&gt;&lt;input type="text" value="${esc(a.nome)}" placeholder="Nome completo" onblur="atUpdNome('${a.id}',this.value)" style="min-width:200px"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="at-field"&gt;&lt;label&gt;Tipo de Consulta&lt;/label&gt;&lt;div class="at-chips" style="margin-top:2px"&gt;${ATEND_TIPOS.map(t=&gt;`&lt;button class="at-chip${a.tipo===t.id?' sel':''}" onclick="atUpd('${a.id}','tipo','${t.id}')"&gt;${t.icon} ${t.label}&lt;/button&gt;`).join('')}&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>${(()=&gt;{const ti=ATEND_TIPOS.find(t=&gt;t.id===a.tipo);const cobra=!ti||ti.cobra!==false;return`&lt;div class="at-section"&gt;&lt;div class="at-section-title"&gt;<span class="s1">💊</span> Consulta&lt;/div&gt;${!cobra?`&lt;div style="font-size:12px;color:#e8b84b;background:rgba(232,184,75,.08);border:1px solid rgba(232,184,75,.2);border-radius:7px;padding:8px 12px;"&gt;Retorno — sem cobrança&lt;/div&gt;`:`&lt;div class="at-row" style="align-items:center;"&gt;&lt;div class="at-field"&gt;&lt;label&gt;Valor (R$)&lt;/label&gt;&lt;input type="number" value="${a.consulta_valor}" oninput="atUpd('${a.id}','consulta_valor',parseFloat(this.value)||0)" style="width:120px"&gt;&lt;/div&gt;&lt;label class="at-nf-toggle${a.consulta_nf?' on':''}" style="margin-top:20px"&gt;&lt;input type="checkbox" ${a.consulta_nf?'checked':''} onchange="atUpd('${a.id}','consulta_nf',this.checked)"&gt;Com Nota Fiscal&lt;/label&gt;&lt;/div&gt;`}&lt;/div&gt;`;})()}</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="at-section"&gt;&lt;div class="at-section-title"&gt;<span class="s1">🔬</span> Procedimentos&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="at-proc-list" id="at-proc-list-${a.id}"&gt;${(a.procs||[]).map((p,pi)=&gt;`&lt;div class="at-proc-item"&gt;&lt;div class="at-proc-row"&gt;&lt;div class="at-chips"&gt;${ATEND_PROCS.map(pr=&gt;`&lt;button class="at-chip${p.tipo===pr.id?' sel':''}" onclick="atUpdProc('${a.id}',${pi},'tipo','${pr.id}')"&gt;${pr.icon} ${pr.label}&lt;/button&gt;`).join('')}&lt;/div&gt;&lt;button class="at-proc-del" onclick="atDelProc('${a.id}',${pi})"&gt;<span class="s7">✕</span>&lt;/button&gt;&lt;/div&gt;&lt;div class="at-proc-row"&gt;&lt;div class="at-field"&gt;&lt;label&gt;Valor (R$)&lt;/label&gt;&lt;input type="number" value="${p.valor}" oninput="atUpdProc('${a.id}',${pi},'valor',parseFloat(this.value)||0)" style="width:120px"&gt;&lt;/div&gt;&lt;label class="at-nf-toggle${p.nf?' on':''}" style="margin-top:20px"&gt;&lt;input type="checkbox" ${p.nf?'checked':''} onchange="atUpdProc('${a.id}',${pi},'nf',this.checked)"&gt;Com NF&lt;/label&gt;&lt;/div&gt;&lt;/div&gt;`).join('')}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;button class="at-add-proc" onclick="atAddProc('${a.id}')"&gt;<span class="s5">＋</span> Adicionar Procedimento&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="at-section"&gt;&lt;div class="at-section-title"&gt;<span class="s1">💳</span> Pagamento&lt;/div&gt;${atPgtoHTML(a)}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;padding-top:14px;border-top:1px solid #2a3347"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;button style="padding:9px 20px;border-radius:9px;border:1px solid #2a3347;background:#1e2535;color:#8b94a8;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer" onclick="atDel('${a.id}')"&gt;<span class="s1">🗑️</span> Remover&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;button style="padding:9px 22px;border-radius:9px;border:none;background:#496750;color:#DBE7DC;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:700;cursor:pointer" onclick="atSalvar('${a.id}')"&gt;<span class="s1">💾</span> Salvar <span class="s2">→</span>&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function atRenderAll(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const cards=document.getElementById('at-cards'), empty=document.getElementById('at-empty');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!cards)return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!atendList.length){cards.innerHTML='';if(empty)empty.style.display='block';atUpdStats();return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(empty)empty.style.display='none';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>cards.innerHTML=atendList.map((a,idx)=&gt;atCardHTML(a,idx+1)).join('');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>atUpdStats();</p>
+<p class="p2">}</p>
+<p class="p2">function atUpdNome(id,val){const a=atGet(id);if(!a)return;a.nome=val;atUpdStats();}</p>
+<p class="p2">function atUpd(id,field,val){const a=atGet(id);if(!a)return;a[field]=val;atRenderAll();}</p>
+<p class="p2">function atUpdPgto(id,field,val){const a=atGet(id);if(!a)return;if(field==='modo'&amp;&amp;val==='duas'){const t=atCalcTotal(a);a.pgto.valor1=parseFloat((t/2).toFixed(2));a.pgto.valor2=parseFloat((t-a.pgto.valor1).toFixed(2));}a.pgto[field]=val;atRenderAll();}</p>
+<p class="p2">function atSyncValor(id,col,val){const a=atGet(id);if(!a)return;const t=atCalcTotal(a),v=Math.min(parseFloat(val)||0,t);if(col===1){a.pgto.valor1=v;a.pgto.valor2=Math.max(0,t-v);}else{a.pgto.valor2=v;a.pgto.valor1=Math.max(0,t-v);}atUpdStats();}</p>
+<p class="p2">function atAddProc(id){const a=atGet(id);if(!a)return;a.procs.push({tipo:'',valor:0,nf:true});atRenderAll();}</p>
+<p class="p2">function atUpdProc(id,pi,field,val){const a=atGet(id);if(!a||!a.procs[pi])return;if(field==='tipo'){const proc=ATEND_PROCS.find(p=&gt;p.id===val);a.procs[pi].tipo=val;if(proc&amp;&amp;!a.procs[pi].valor)a.procs[pi].valor=proc.valorBase;}else{a.procs[pi][field]=val;}atRenderAll();}</p>
+<p class="p2">function atDelProc(id,pi){const a=atGet(id);if(!a)return;a.procs.splice(pi,1);atRenderAll();}</p>
+<p class="p2">async function atDel(id){const a=atGet(id);atendList=atendList.filter(x=&gt;x.id!==id);atRenderAll();if(a?.id&amp;&amp;!a.id.startsWith('local-'))await apiDelete('atendimentos',a.id);}</p>
+<p class="p2">function atEditar(id){const a=atGet(id);if(!a)return;a.salvo=false;atRenderAll();}</p>
+<p class="p2">async function atSalvar(id){const a=atGet(id);if(!a)return;a.salvo=true;a.data=atToday();atRenderAll();await atSaveToSheets(a);showToast('<span class="s1">💾</span> Atendimento salvo!');}</p>
+<p class="p2">function atAddPaciente(){const id='local-'+Date.now();atendList.push({id,data:atToday(),nome:'',tipo:'',consulta_valor:700,consulta_nf:true,pgto:{modo:'',tipo1:'',tipo2:'',parcelas1:1,parcelas2:1,valor1:0,valor2:0},procs:[],salvo:false});atRenderAll();}</p>
+<p class="p2">function atUpdStats(){const bar=document.getElementById('atend-stats-bar');if(!bar)return;const n=atendList.length,total=atendList.reduce((s,a)=&gt;s+atCalcTotal(a),0);bar.innerHTML=n?`&lt;div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"&gt;&lt;span style="font-size:16px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1"&gt;${n}&lt;/span&gt;&lt;span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px"&gt;Pac.&lt;/span&gt;&lt;/div&gt;&lt;div style="display:flex;flex-direction:column;align-items:center;padding:4px 10px;background:#1e2535;border-radius:8px;border:1px solid #2a3347"&gt;&lt;span style="font-size:14px;font-weight:600;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1"&gt;${atFmt(total)}&lt;/span&gt;&lt;span style="font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;margin-top:2px"&gt;Total&lt;/span&gt;&lt;/div&gt;`:'';}</p>
+<p class="p1"><br></p>
+<p class="p2">function atShowResumo(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!atendList.length){alert('Nenhum atendimento registrado.');return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const totalGeral=atendList.reduce((s,a)=&gt;s+atCalcTotal(a),0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const now=new Date(),dataStr=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tiposLabel={primeira:'Primeira Consulta',nova:'Nova Consulta',retorno:'Retorno'};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const overlay=document.createElement('div');overlay.className='at-summary-overlay';overlay.id='at-summary-overlay';overlay.onclick=e=&gt;{if(e.target===overlay)overlay.remove();};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>overlay.innerHTML=`&lt;div class="at-summary-box"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px"&gt;&lt;span style="font-size:18px;font-weight:700"&gt;<span class="s1">📊</span> Resumo do Dia&lt;/span&gt;&lt;button style="background:#1e2535;border:1px solid #2a3347;color:#8b94a8;border-radius:8px;padding:5px 13px;cursor:pointer;font-size:13px;font-family:'DM Sans',sans-serif;" onclick="document.getElementById('at-summary-overlay').remove()"&gt;<span class="s7">✕</span>&lt;/button&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="font-size:12px;color:#8b94a8;margin-bottom:16px"&gt;${dataStr}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>${atendList.map((a,i)=&gt;{const ps=a.procs.length?(a.procs.map(p=&gt;{const inf=ATEND_PROCS.find(pr=&gt;pr.id===p.tipo);return inf?inf.label:'?';}).join(', ')):'Apenas consulta';return`&lt;div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(42,51,71,.5);gap:12px"&gt;&lt;div&gt;&lt;div style="font-size:13px;font-weight:600"&gt;${i+1}. ${a.nome||'—'}&lt;/div&gt;&lt;div style="font-size:11px;color:#8b94a8"&gt;${tiposLabel[a.tipo]||'—'} · ${ps} · ${atPgtoLabel(a)}&lt;/div&gt;&lt;/div&gt;&lt;span style="font-family:'DM Mono',monospace;font-size:13px;color:#81BBA1;font-weight:600;white-space:nowrap"&gt;${atFmt(atCalcTotal(a))}&lt;/span&gt;&lt;/div&gt;`;}).join('')}</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="background:#496750;border-radius:12px;padding:14px 18px;margin-top:16px;display:flex;justify-content:space-between;align-items:center"&gt;&lt;div style="font-size:12px;color:rgba(255,255,255,.8)"&gt;Faturamento Total do Dia&lt;/div&gt;&lt;div style="font-size:22px;font-weight:700;font-family:'DM Mono',monospace"&gt;${atFmt(totalGeral)}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="at-summary-pdf-btn" onclick="atExportResumo()"&gt;<span class="s1">🖨️</span> Exportar PDF&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.body.appendChild(overlay);</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function atExportResumo(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const now=new Date(),dataStr=now.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const totalGeral=atendList.reduce((s,a)=&gt;s+atCalcTotal(a),0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tiposLabel={primeira:'Primeira Consulta',nova:'Nova Consulta',retorno:'Retorno'};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const rows=atendList.map((a,i)=&gt;{const ps=a.procs.length?(a.procs.map(p=&gt;{const inf=ATEND_PROCS.find(pr=&gt;pr.id===p.tipo);return inf?inf.label:'?';}).join(', ')):'Apenas consulta';return`&lt;tr&gt;&lt;td style="padding:6px 10px;font-size:13px"&gt;${i+1}. ${a.nome||'—'}&lt;/td&gt;&lt;td style="padding:6px 10px;font-size:12px;color:#666"&gt;${tiposLabel[a.tipo]||'—'}&lt;/td&gt;&lt;td style="padding:6px 10px;font-size:12px;color:#666"&gt;${ps}&lt;/td&gt;&lt;td style="padding:6px 10px;font-size:12px;color:#666"&gt;${atPgtoLabel(a)}&lt;/td&gt;&lt;td style="padding:6px 10px;text-align:right;font-weight:600;color:#496750"&gt;${atFmt(atCalcTotal(a))}&lt;/td&gt;&lt;/tr&gt;`;}).join('');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const html=`&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;title&gt;Atendimentos ${dataStr}&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,Arial,sans-serif;padding:36px 44px;max-width:720px;margin:0 auto;color:#222}.hdr{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px}.cv{font-size:26px;color:#496750;font-weight:900;letter-spacing:-4px}h3{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B9776;margin:18px 0 8px}table{width:100%;border-collapse:collapse;border:1px solid #eee}th{background:#f0f5f1;padding:7px 10px;font-size:11px;text-align:left;color:#496750;text-transform:uppercase}tr:nth-child(even){background:#fafafa}.total-box{background:#496750;border-radius:10px;padding:14px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center;margin:20px 0}.bp{display:block;margin:0 auto;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}@media print{.bp{display:none}}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hdr"&gt;&lt;div style="display:flex;align-items:center;gap:10px"&gt;&lt;span class="cv"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;div&gt;&lt;div style="font-size:17px;font-weight:700;color:#496750"&gt;Dr. Marcelo Tostes&lt;/div&gt;&lt;div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase"&gt;Ortopedia · Cirurgia do Joelho / Esporte&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div style="text-align:right;font-size:11px;color:#888;line-height:1.8"&gt;&lt;strong&gt;ATENDIMENTOS DO DIA&lt;/strong&gt;&lt;br&gt;${dataStr}&lt;br&gt;CRM-SP 120.317&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Paciente&lt;/th&gt;&lt;th&gt;Tipo&lt;/th&gt;&lt;th&gt;Procedimentos&lt;/th&gt;&lt;th&gt;Pagamento&lt;/th&gt;&lt;th style="text-align:right"&gt;Valor&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;${rows}&lt;/tbody&gt;&lt;/table&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="total-box"&gt;&lt;div style="font-size:12px;opacity:.8"&gt;Faturamento Total do Dia&lt;/div&gt;&lt;div style="font-size:22px;font-weight:700"&gt;${atFmt(totalGeral)}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;button class="bp" onclick="window.print()"&gt;<span class="s1">🖨️</span> Salvar como PDF&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/body&gt;&lt;/html&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='atendimentos_'+now.toLocaleDateString('pt-BR').replace(/\//g,'-')+'.html';document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=&gt;URL.revokeObjectURL(url),1000);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('at-summary-overlay')?.remove();</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">// CONTABILIDADE DO MÊS</p>
+<p class="p3"><span class="s4">// </span>══════════════════════════════════════</p>
+<p class="p2">let contabDados={},contabMes=new Date().getMonth(),contabAno=new Date().getFullYear();</p>
+<p class="p2">let contabTab='visao',contabInited=false;</p>
+<p class="p2">const contabMesesNomes=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];</p>
+<p class="p2">const cFmt=n=&gt;new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n||0);</p>
+<p class="p2">const cFmtData=ds=&gt;{if(!ds)return'—';const[y,m,d]=ds.split('-');const mn=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return d+'/'+mn[parseInt(m)-1];};</p>
+<p class="p2">const cFmtDataLong=ds=&gt;{if(!ds)return'—';const dt=new Date(ds+'T12:00:00');const dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];const[y,m,d]=ds.split('-');const mn=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return dias[dt.getDay()]+' '+d+'/'+mn[parseInt(m)-1];};</p>
+<p class="p2">function contabKey(){return contabAno+'-'+contabMes;}</p>
+<p class="p2">function contabGetDias(){return contabDados[contabKey()]||[];}</p>
+<p class="p1"><br></p>
+<p class="p2">async function cbLoadFromSheets(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>syncStart('cb-sync-icon');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>try {</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const res=await apiGet('contabilidade');if(res.error)throw new Error(res.error);</p>
+<p class="p2"><span class="Apple-converted-space">    </span>contabDados={};</p>
+<p class="p2"><span class="Apple-converted-space">    </span>(res.rows||[]).forEach(r=&gt;{const dt=new Date(r.data+'T12:00:00');const k=dt.getFullYear()+'-'+dt.getMonth();if(!contabDados[k])contabDados[k]=[];contabDados[k].push({id:r.id,data:r.data,pacientes:parseInt(r.pacientes)||0,faturamento:parseFloat(r.faturamento)||0,procs:{visco:parseInt(r.visco)||0,artro:parseInt(r.artro)||0,infil:parseInt(r.infil)||0},pgto:r.pgto||''});});</p>
+<p class="p2"><span class="Apple-converted-space">    </span>Object.keys(contabDados).forEach(k=&gt;contabDados[k].sort((a,b)=&gt;a.data.localeCompare(b.data)));</p>
+<p class="p2"><span class="Apple-converted-space">    </span>contabRenderAll();showToast('<span class="s1">✅</span> Contabilidade sincronizada!');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>} catch(e){showToast('Erro: '+e.message,true);}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>syncEnd('cb-sync-icon');</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">async function cbSaveEntry(entry){const res=await apiSave('contabilidade',{id:entry.id,data:entry.data,pacientes:entry.pacientes,faturamento:entry.faturamento,visco:entry.procs.visco,artro:entry.procs.artro,infil:entry.procs.infil,pgto:entry.pgto||''});if(res.ok){entry.id=res.id;showToast('<span class="s1">💾</span> Dia salvo!');}}</p>
+<p class="p1"><br></p>
+<p class="p2">function initContab(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!contabInited){</p>
+<p class="p2"><span class="Apple-converted-space">    </span>contabInited=true;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const selM=document.getElementById('contab-sel-mes'),selA=document.getElementById('contab-sel-ano');</p>
+<p class="p2"><span class="Apple-converted-space">    </span>contabMesesNomes.forEach((m,i)=&gt;{const o=document.createElement('option');o.value=i;o.textContent=m;if(i===contabMes)o.selected=true;selM.appendChild(o);});</p>
+<p class="p2"><span class="Apple-converted-space">    </span>const ny=new Date().getFullYear();</p>
+<p class="p2"><span class="Apple-converted-space">    </span>for(let y=ny-2;y&lt;=ny+1;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===ny)o.selected=true;selA.appendChild(o);}</p>
+<p class="p2"><span class="Apple-converted-space">    </span>document.getElementById('contab-body').innerHTML=`&lt;style&gt;</p>
+<p class="p2">.cb-wrap{max-width:1000px;margin:0 auto;padding:16px 16px 40px;}</p>
+<p class="p2">.cb-tabs{display:flex;gap:4px;background:#161b25;border:1px solid #2a3347;border-radius:10px;padding:4px;margin-bottom:18px;}</p>
+<p class="p2">.cb-tab{flex:1;padding:8px 0;text-align:center;font-size:13px;font-weight:500;border-radius:7px;border:none;background:transparent;color:#8b94a8;cursor:pointer;font-family:'DM Sans',sans-serif;}</p>
+<p class="p2">.cb-tab.active{background:#496750;color:#DBE7DC;}</p>
+<p class="p2">.cb-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}</p>
+<p class="p2">.cb-kpi{background:#161b25;border:1px solid #2a3347;border-radius:12px;padding:14px 16px;}</p>
+<p class="p2">.cb-kpi.accent{border-color:#496750;background:rgba(73,103,80,.1);}</p>
+<p class="p2">.cb-kpi-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#8b94a8;font-weight:600;margin-bottom:6px;}</p>
+<p class="p2">.cb-kpi-val{font-size:20px;font-weight:700;font-family:'DM Mono',monospace;color:#81BBA1;line-height:1;}</p>
+<p class="p2">.cb-kpi-sub{font-size:11px;color:#8b94a8;margin-top:4px;}</p>
+<p class="p2">.cb-card{background:#161b25;border:1px solid #2a3347;border-radius:12px;padding:16px 18px;margin-bottom:14px;}</p>
+<p class="p2">.cb-sec{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#5B9776;font-weight:700;margin-bottom:12px;}</p>
+<p class="p2">.cb-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}</p>
+<p class="p2">.cb-bars{display:flex;align-items:flex-end;gap:4px;height:130px;}</p>
+<p class="p2">.cb-bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:3px;}</p>
+<p class="p2">.cb-bar{border-radius:3px 3px 0 0;min-height:3px;width:100%;}</p>
+<p class="p2">.cb-bar-lbl{font-size:8px;color:#8b94a8;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:30px;}</p>
+<p class="p2">.cb-table{width:100%;border-collapse:collapse;}</p>
+<p class="p2">.cb-table th{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#8b94a8;font-weight:600;padding:6px 10px;text-align:left;border-bottom:1px solid #2a3347;}</p>
+<p class="p2">.cb-table th.r{text-align:right;}</p>
+<p class="p2">.cb-table td{padding:8px 10px;font-size:13px;border-bottom:1px solid rgba(42,51,71,.4);}</p>
+<p class="p2">.cb-table td.r{text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:#81BBA1;}</p>
+<p class="p2">.cb-table tfoot td{font-weight:700;border-top:2px solid #2a3347;border-bottom:none;padding-top:10px;}</p>
+<p class="p2">.cb-table tfoot td.r{font-size:14px;color:#81BBA1;}</p>
+<p class="p2">.cb-del{background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.2);color:#e05252;border-radius:5px;padding:2px 7px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif;}</p>
+<p class="p2">.cb-man-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-top:14px;}</p>
+<p class="p2">.cb-field{display:flex;flex-direction:column;gap:5px;}</p>
+<p class="p2">.cb-field label{font-size:10px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;font-weight:500;}</p>
+<p class="p2">.cb-field input,.cb-field select{background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}</p>
+<p class="p2">.cb-add-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:7px;border:none;background:#496750;color:#DBE7DC;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;height:36px;}</p>
+<p class="p2">.cb-proj-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}</p>
+<p class="p2">.cb-proj{background:#1a2133;border-radius:10px;padding:14px 16px;border:1px solid #2a3347;}</p>
+<p class="p2">.cb-proj-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#8b94a8;font-weight:600;margin-bottom:6px;}</p>
+<p class="p2">.cb-proj-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:#81BBA1;}</p>
+<p class="p2">.cb-empty{text-align:center;padding:50px;color:#8b94a8;}</p>
+<p class="p2">&lt;/style&gt;</p>
+<p class="p2">&lt;div class="cb-wrap"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="cb-tabs"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="cb-tab active" onclick="contabSetTab('visao')"&gt;<span class="s1">📊</span> Visão Geral&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="cb-tab" onclick="contabSetTab('dias')"&gt;<span class="s1">📅</span> Dias&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="cb-tab" onclick="contabSetTab('procs')"&gt;<span class="s1">🔬</span> Procedimentos&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;button class="cb-tab" onclick="contabSetTab('proj')"&gt;<span class="s1">📈</span> Projeção&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div id="cb-tab-visao"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div id="cb-tab-dias" style="display:none"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div id="cb-tab-procs" style="display:none"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div id="cb-tab-proj" style="display:none"&gt;&lt;/div&gt;</p>
+<p class="p2">&lt;/div&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>cbLoadFromSheets();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>} else { contabRenderAll(); }</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function contabSetTab(t){contabTab=t;['visao','dias','procs','proj'].forEach(id=&gt;{const el=document.getElementById('cb-tab-'+id);if(el)el.style.display=id===t?'block':'none';});document.querySelectorAll('.cb-tab').forEach((b,i)=&gt;{b.classList.toggle('active',['visao','dias','procs','proj'][i]===t);});contabRenderAll();}</p>
+<p class="p2">function contabUpdMes(){contabMes=parseInt(document.getElementById('contab-sel-mes').value);contabAno=parseInt(document.getElementById('contab-sel-ano').value);document.getElementById('contab-sub').textContent='Dr. Marcelo Tostes · '+contabMesesNomes[contabMes]+' '+contabAno;contabRenderAll();}</p>
+<p class="p2">function contabRenderAll(){contabRenderVisao();contabRenderDias();contabRenderProcs();contabRenderProj();}</p>
+<p class="p1"><br></p>
+<p class="p2">function contabRenderVisao(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const el=document.getElementById('cb-tab-visao');if(!el)return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const dias=contabGetDias();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tFat=dias.reduce((s,d)=&gt;s+d.faturamento,0),tPac=dias.reduce((s,d)=&gt;s+d.pacientes,0),dt=dias.length;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tProcs=dias.reduce((s,d)=&gt;s+(d.procs.visco||0)+(d.procs.artro||0)+(d.procs.infil||0),0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const maxF=Math.max(...dias.map(d=&gt;d.faturamento),1);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const barsHTML=dias.length?dias.map(d=&gt;{const pct=(d.faturamento/maxF*100).toFixed(1);const cor=d.faturamento&gt;10000?'#496750':d.faturamento&gt;5000?'#5B9776':'#81BBA1';return`&lt;div class="cb-bar-col"&gt;&lt;div class="cb-bar" style="height:${pct}%;background:${cor}" title="${cFmtDataLong(d.data)}: ${cFmt(d.faturamento)}"&gt;&lt;/div&gt;&lt;div class="cb-bar-lbl"&gt;${cFmtData(d.data)}&lt;/div&gt;&lt;/div&gt;`;}).join(''):'&lt;div style="color:#8b94a8;font-size:12px;text-align:center;width:100%;padding-top:40px"&gt;Sem dados&lt;/div&gt;';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>el.innerHTML=`&lt;div class="cb-kpis"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-kpi accent"&gt;&lt;div class="cb-kpi-lbl"&gt;Faturamento Total&lt;/div&gt;&lt;div class="cb-kpi-val"&gt;${cFmt(tFat)}&lt;/div&gt;&lt;div class="cb-kpi-sub"&gt;${dt} dias trabalhados&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-kpi"&gt;&lt;div class="cb-kpi-lbl"&gt;Pacientes&lt;/div&gt;&lt;div class="cb-kpi-val" style="color:#5b8fe8"&gt;${tPac}&lt;/div&gt;&lt;div class="cb-kpi-sub"&gt;Ticket médio: ${cFmt(tPac?tFat/tPac:0)}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-kpi"&gt;&lt;div class="cb-kpi-lbl"&gt;Média por Dia&lt;/div&gt;&lt;div class="cb-kpi-val" style="color:#5b8fe8"&gt;${cFmt(dt?tFat/dt:0)}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-kpi"&gt;&lt;div class="cb-kpi-lbl"&gt;Procedimentos&lt;/div&gt;&lt;div class="cb-kpi-val" style="color:#e8b84b"&gt;${tProcs}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="cb-chart-grid"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-card"&gt;&lt;div class="cb-sec"&gt;Faturamento por Dia&lt;/div&gt;&lt;div class="cb-bars"&gt;${barsHTML}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-card"&gt;&lt;div class="cb-sec"&gt;Lançar Dia Manualmente&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div class="cb-man-grid"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="cb-field"&gt;&lt;label&gt;Data&lt;/label&gt;&lt;input type="date" id="cb-m-data"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="cb-field"&gt;&lt;label&gt;Pacientes&lt;/label&gt;&lt;input type="number" id="cb-m-pac" placeholder="0" min="0"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="cb-field"&gt;&lt;label&gt;Faturamento (R$)&lt;/label&gt;&lt;input type="number" id="cb-m-fat" placeholder="0,00" min="0"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;button class="cb-add-btn" onclick="contabAddManual()"&gt;<span class="s5">＋</span>&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="cb-field" style="flex:1;min-width:80px"&gt;&lt;label&gt;Visco&lt;/label&gt;&lt;input type="number" id="cb-m-visco" placeholder="0" min="0"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="cb-field" style="flex:1;min-width:80px"&gt;&lt;label&gt;Artrocent.&lt;/label&gt;&lt;input type="number" id="cb-m-artro" placeholder="0" min="0"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="cb-field" style="flex:1;min-width:80px"&gt;&lt;label&gt;Infiltr.&lt;/label&gt;&lt;input type="number" id="cb-m-infil" placeholder="0" min="0"&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;div class="cb-field" style="flex:1;min-width:120px"&gt;&lt;label&gt;Pagamento&lt;/label&gt;</p>
+<p class="p2"><span class="Apple-converted-space">          </span>&lt;select id="cb-m-pgto"&gt;&lt;option value=""&gt;—&lt;/option&gt;&lt;option value="dinheiro"&gt;Dinheiro&lt;/option&gt;&lt;option value="pix"&gt;Pix&lt;/option&gt;&lt;option value="credito"&gt;Crédito&lt;/option&gt;&lt;option value="debito"&gt;Débito&lt;/option&gt;&lt;option value="cheque"&gt;Cheque&lt;/option&gt;&lt;/select&gt;</p>
+<p class="p2"><span class="Apple-converted-space">        </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">      </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function contabRenderDias(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const el=document.getElementById('cb-tab-dias');if(!el)return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const dias=contabGetDias();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!dias.length){el.innerHTML='&lt;div class="cb-card"&gt;&lt;div class="cb-empty"&gt;<span class="s1">📅</span> Nenhum dia registrado&lt;/div&gt;&lt;/div&gt;';return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tFat=dias.reduce((s,d)=&gt;s+d.faturamento,0),tPac=dias.reduce((s,d)=&gt;s+d.pacientes,0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tV=dias.reduce((s,d)=&gt;s+(d.procs.visco||0),0),tA=dias.reduce((s,d)=&gt;s+(d.procs.artro||0),0),tI=dias.reduce((s,d)=&gt;s+(d.procs.infil||0),0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const pgL={dinheiro:'<span class="s1">💵</span> Dinheiro',pix:'<span class="s1">📲</span> Pix',credito:'<span class="s1">💳</span> Crédito',debito:'<span class="s1">💳</span> Débito',cheque:'<span class="s1">📄</span> Cheque'};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>el.innerHTML=`&lt;div class="cb-card"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"&gt;&lt;div class="cb-sec" style="margin:0"&gt;Registros do Mês&lt;/div&gt;&lt;button onclick="contabExportCSV()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:8px;border:1px solid #2a3347;background:#1e2535;color:#8b94a8;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;"&gt;<span class="s6">⬇</span> CSV&lt;/button&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;table class="cb-table"&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Data&lt;/th&gt;&lt;th class="r"&gt;Pac.&lt;/th&gt;&lt;th class="r"&gt;Faturamento&lt;/th&gt;&lt;th class="r"&gt;Visco&lt;/th&gt;&lt;th class="r"&gt;Artrocent.&lt;/th&gt;&lt;th class="r"&gt;Infiltr.&lt;/th&gt;&lt;th&gt;Pgto&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;tbody&gt;${dias.map(d=&gt;`&lt;tr&gt;&lt;td style="font-family:'DM Mono',monospace;font-size:12px"&gt;${cFmtDataLong(d.data)}&lt;/td&gt;&lt;td class="r"&gt;${d.pacientes}&lt;/td&gt;&lt;td class="r"&gt;${cFmt(d.faturamento)}&lt;/td&gt;&lt;td class="r"&gt;${d.procs.visco||0}&lt;/td&gt;&lt;td class="r"&gt;${d.procs.artro||0}&lt;/td&gt;&lt;td class="r"&gt;${d.procs.infil||0}&lt;/td&gt;&lt;td style="font-size:12px"&gt;${pgL[d.pgto]||d.pgto||'—'}&lt;/td&gt;&lt;td&gt;&lt;button class="cb-del" onclick="contabDelDia('${d.data}','${d.id||''}')"&gt;<span class="s7">✕</span>&lt;/button&gt;&lt;/td&gt;&lt;/tr&gt;`).join('')}&lt;/tbody&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;tfoot&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;TOTAL&lt;/strong&gt;&lt;/td&gt;&lt;td class="r"&gt;&lt;strong&gt;${tPac}&lt;/strong&gt;&lt;/td&gt;&lt;td class="r"&gt;&lt;strong&gt;${cFmt(tFat)}&lt;/strong&gt;&lt;/td&gt;&lt;td class="r"&gt;&lt;strong&gt;${tV}&lt;/strong&gt;&lt;/td&gt;&lt;td class="r"&gt;&lt;strong&gt;${tA}&lt;/strong&gt;&lt;/td&gt;&lt;td class="r"&gt;&lt;strong&gt;${tI}&lt;/strong&gt;&lt;/td&gt;&lt;td colspan="2"&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;/table&gt;&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function contabRenderProcs(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const el=document.getElementById('cb-tab-procs');if(!el)return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const dias=contabGetDias();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const visco=dias.reduce((s,d)=&gt;s+(d.procs.visco||0),0),artro=dias.reduce((s,d)=&gt;s+(d.procs.artro||0),0),infil=dias.reduce((s,d)=&gt;s+(d.procs.infil||0),0),total=visco+artro+infil;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const list=[{l:'Viscosuplementação',icon:'<span class="s1">💉</span>',qtd:visco,vunit:2100,cor:'#81BBA1'},{l:'Artrocentese',icon:'<span class="s1">🔬</span>',qtd:artro,vunit:200,cor:'#5b8fe8'},{l:'Infiltração Triancil',icon:'<span class="s1">💊</span>',qtd:infil,vunit:600,cor:'#e8b84b'}];</p>
+<p class="p2"><span class="Apple-converted-space">  </span>el.innerHTML=`&lt;div class="cb-card"&gt;&lt;div class="cb-sec"&gt;Procedimentos do Mês&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>${!total?'&lt;div class="cb-empty"&gt;<span class="s1">🔬</span> Nenhum procedimento registrado&lt;/div&gt;':list.map(p=&gt;{const pct=total?Math.round(p.qtd/total*100):0;return`&lt;div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(42,51,71,.4)"&gt;&lt;span style="font-size:26px"&gt;${p.icon}&lt;/span&gt;&lt;div style="flex:1"&gt;&lt;div style="font-weight:600;font-size:13px;margin-bottom:6px"&gt;${p.l}&lt;/div&gt;&lt;div style="background:#2a3347;border-radius:20px;height:7px;overflow:hidden"&gt;&lt;div style="height:7px;border-radius:20px;background:${p.cor};width:${pct}%"&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div style="text-align:right;min-width:50px"&gt;&lt;div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:700;color:${p.cor}"&gt;${p.qtd}&lt;/div&gt;&lt;div style="font-size:10px;color:#8b94a8"&gt;realizados&lt;/div&gt;&lt;/div&gt;&lt;div style="text-align:right;min-width:100px"&gt;&lt;div style="font-family:'DM Mono',monospace;font-size:13px"&gt;${cFmt(p.qtd*p.vunit)}&lt;/div&gt;&lt;div style="font-size:10px;color:#8b94a8"&gt;rec. estimada&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;`;}).join('')}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>${total?`&lt;div style="display:flex;justify-content:space-between;padding-top:12px"&gt;&lt;strong&gt;Total&lt;/strong&gt;&lt;strong style="font-family:'DM Mono',monospace;color:#81BBA1"&gt;${total} · ${cFmt(list.reduce((s,p)=&gt;s+p.qtd*p.vunit,0))}&lt;/strong&gt;&lt;/div&gt;`:''}&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function contabRenderProj(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const el=document.getElementById('cb-tab-proj');if(!el)return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const dias=contabGetDias();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!dias.length){el.innerHTML='&lt;div class="cb-card"&gt;&lt;div class="cb-empty"&gt;<span class="s1">📈</span> Sem dados para projetar&lt;/div&gt;&lt;/div&gt;';return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tFat=dias.reduce((s,d)=&gt;s+d.faturamento,0),mediaDia=tFat/dias.length;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const hoje=new Date();hoje.setHours(0,0,0,0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const mesAtual=new Date().getMonth()===contabMes&amp;&amp;new Date().getFullYear()===contabAno;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const diasNoMes=new Date(contabAno,contabMes+1,0).getDate();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>let diasRestantes=0;for(let d=1;d&lt;=diasNoMes;d++){const dt=new Date(contabAno,contabMes,d);if(dt.getDay()!==0&amp;&amp;dt&gt;=hoje)diasRestantes++;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const projecao=mesAtual?tFat+(mediaDia*diasRestantes):tFat;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const meta=50000,pct=Math.min(100,tFat/meta*100);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>el.innerHTML=`&lt;div class="cb-card"&gt;&lt;div class="cb-sec"&gt;Projeção — ${contabMesesNomes[contabMes]} ${contabAno}&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="cb-proj-grid"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-proj"&gt;&lt;div class="cb-proj-lbl"&gt;Realizado&lt;/div&gt;&lt;div class="cb-proj-val"&gt;${cFmt(tFat)}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>${mesAtual?`&lt;div class="cb-proj"&gt;&lt;div class="cb-proj-lbl"&gt;Projeção Final&lt;/div&gt;&lt;div class="cb-proj-val" style="color:#e8b84b"&gt;${cFmt(projecao)}&lt;/div&gt;&lt;div style="font-size:11px;color:#8b94a8;margin-top:4px"&gt;${diasRestantes} dias úteis restantes&lt;/div&gt;&lt;/div&gt;`:''}</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div class="cb-proj"&gt;&lt;div class="cb-proj-lbl"&gt;Média/Dia&lt;/div&gt;&lt;div class="cb-proj-val" style="color:#5b8fe8"&gt;${cFmt(mediaDia)}&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="cb-sec"&gt;Meta Mensal&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div style="display:flex;align-items:center;gap:14px;margin-bottom:8px"&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;div style="flex:1"&gt;&lt;div style="display:flex;justify-content:space-between;margin-bottom:5px"&gt;&lt;span style="font-size:11px;color:#8b94a8"&gt;${cFmt(tFat)}&lt;/span&gt;&lt;span style="font-size:11px;color:#8b94a8"&gt;${cFmt(meta)}&lt;/span&gt;&lt;/div&gt;&lt;div style="background:#2a3347;border-radius:20px;height:12px;overflow:hidden"&gt;&lt;div style="height:12px;border-radius:20px;background:${pct&gt;=100?'#81BBA1':pct&gt;=70?'#e8b84b':'#e05252'};width:${pct}%"&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">    </span>&lt;span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:700;color:${pct&gt;=100?'#81BBA1':pct&gt;=70?'#e8b84b':'#e05252'}"&gt;${pct.toFixed(1)}%&lt;/span&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div style="font-size:11px;color:#8b94a8"&gt;${pct&gt;=100?'<span class="s1">✅</span> Meta atingida!':'Faltam '+cFmt(meta-tFat)+' para a meta de '+cFmt(meta)}&lt;/div&gt;&lt;/div&gt;`;</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">async function contabAddManual(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const data=document.getElementById('cb-m-data').value;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const pac=parseInt(document.getElementById('cb-m-pac').value)||0;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const fat=parseFloat(document.getElementById('cb-m-fat').value)||0;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!data||(!pac&amp;&amp;!fat)){alert('Informe a data e ao menos o faturamento.');return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const entry={data,pacientes:pac,faturamento:fat,procs:{visco:parseInt(document.getElementById('cb-m-visco').value)||0,artro:parseInt(document.getElementById('cb-m-artro').value)||0,infil:parseInt(document.getElementById('cb-m-infil').value)||0},pgto:document.getElementById('cb-m-pgto').value};</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const dt=new Date(data+'T12:00:00');const k=dt.getFullYear()+'-'+dt.getMonth();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!contabDados[k])contabDados[k]=[];</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const idx=contabDados[k].findIndex(e=&gt;e.data===data);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(idx&gt;=0){if(!confirm('Já existe registro em '+cFmtData(data)+'. Substituir?'))return;entry.id=contabDados[k][idx].id;contabDados[k][idx]=entry;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>else contabDados[k].push(entry);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>contabDados[k].sort((a,b)=&gt;a.data.localeCompare(b.data));</p>
+<p class="p2"><span class="Apple-converted-space">  </span>contabMes=dt.getMonth();contabAno=dt.getFullYear();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('contab-sel-mes').value=contabMes;document.getElementById('contab-sel-ano').value=contabAno;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('contab-sub').textContent='Dr. Marcelo Tostes · '+contabMesesNomes[contabMes]+' '+contabAno;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>contabRenderAll();await cbSaveEntry(entry);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>['cb-m-data','cb-m-pac','cb-m-fat','cb-m-visco','cb-m-artro','cb-m-infil'].forEach(id=&gt;document.getElementById(id).value='');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>document.getElementById('cb-m-pgto').value='';</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">async function contabDelDia(data,id){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>if(!confirm('Remover registro de '+cFmtData(data)+'?'))return;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const k=contabKey();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>contabDados[k]=(contabDados[k]||[]).filter(e=&gt;e.data!==data);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>contabRenderAll();</p>
+<p class="p2"><span class="Apple-converted-space">  </span>await apiDeleteDay(data);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>showToast('<span class="s1">🗑️</span> Removido!');</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function contabExportCSV(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const dias=contabGetDias();if(!dias.length){alert('Sem dados.');return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>let csv='Data;Pacientes;Faturamento;Visco;Artrocentese;Infiltração;Pagamento\n';</p>
+<p class="p2"><span class="Apple-converted-space">  </span>dias.forEach(d=&gt;{csv+=`${d.data};${d.pacientes};${d.faturamento.toFixed(2)};${d.procs.visco||0};${d.procs.artro||0};${d.procs.infil||0};${d.pgto||''}\n`;});</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`contabilidade_${contabMesesNomes[contabMes]}_${contabAno}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=&gt;URL.revokeObjectURL(url),1000);</p>
+<p class="p2">}</p>
+<p class="p1"><br></p>
+<p class="p2">function contabExportarPDF(){</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const dias=contabGetDias();if(!dias.length){alert('Sem dados.');return;}</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const tFat=dias.reduce((s,d)=&gt;s+d.faturamento,0),tPac=dias.reduce((s,d)=&gt;s+d.pacientes,0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const visco=dias.reduce((s,d)=&gt;s+(d.procs.visco||0),0),artro=dias.reduce((s,d)=&gt;s+(d.procs.artro||0),0),infil=dias.reduce((s,d)=&gt;s+(d.procs.infil||0),0);</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const rows=dias.map(d=&gt;`&lt;tr&gt;&lt;td&gt;${cFmtDataLong(d.data)}&lt;/td&gt;&lt;td style="text-align:center"&gt;${d.pacientes}&lt;/td&gt;&lt;td style="text-align:right;font-weight:600"&gt;${cFmt(d.faturamento)}&lt;/td&gt;&lt;td style="text-align:center"&gt;${d.procs.visco||0}&lt;/td&gt;&lt;td style="text-align:center"&gt;${d.procs.artro||0}&lt;/td&gt;&lt;td style="text-align:center"&gt;${d.procs.infil||0}&lt;/td&gt;&lt;/tr&gt;`).join('');</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const html=`&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;title&gt;Contabilidade ${contabMesesNomes[contabMes]} ${contabAno}&lt;/title&gt;&lt;style&gt;*{box-sizing:border-box;margin:0;padding:0}body{font-family:Calibri,sans-serif;padding:36px 44px;max-width:760px;margin:0 auto;color:#222}.hdr{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #496750;padding-bottom:14px;margin-bottom:20px}.cv{font-size:24px;color:#496750;font-weight:900;letter-spacing:-4px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}.kpi{background:#f7faf8;border:1px solid #DBE7DC;border-radius:8px;padding:11px 13px}.kpi-l{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#5B9776;font-weight:700;margin-bottom:4px}.kpi-v{font-size:17px;font-weight:700;color:#496750}h3{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5B9776;margin:16px 0 8px}table{width:100%;border-collapse:collapse;border:1px solid #eee}th{background:#f0f5f1;padding:6px 9px;font-size:11px;text-align:left;color:#496750;text-transform:uppercase}td{padding:6px 9px;font-size:12px;border-bottom:1px solid #f5f5f5}tfoot td{font-weight:700;border-top:2px solid #496750}.bp{display:block;margin:20px auto 0;padding:10px 32px;background:#496750;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}@media print{.bp{display:none}}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="hdr"&gt;&lt;div style="display:flex;align-items:center;gap:10px"&gt;&lt;span class="cv"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;div&gt;&lt;div style="font-size:17px;font-weight:700;color:#496750"&gt;Dr. Marcelo Tostes&lt;/div&gt;&lt;div style="font-size:10px;color:#5B9776;letter-spacing:1.5px;text-transform:uppercase"&gt;Ortopedia · Cirurgia do Joelho / Esporte&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;div style="text-align:right;font-size:11px;color:#888;line-height:1.8"&gt;&lt;strong&gt;CONTABILIDADE MENSAL&lt;/strong&gt;&lt;br&gt;${contabMesesNomes[contabMes]} ${contabAno}&lt;br&gt;CRM-SP 120.317&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;div class="kpis"&gt;&lt;div class="kpi"&gt;&lt;div class="kpi-l"&gt;Faturamento Total&lt;/div&gt;&lt;div class="kpi-v"&gt;${cFmt(tFat)}&lt;/div&gt;&lt;/div&gt;&lt;div class="kpi"&gt;&lt;div class="kpi-l"&gt;Pacientes&lt;/div&gt;&lt;div class="kpi-v"&gt;${tPac}&lt;/div&gt;&lt;/div&gt;&lt;div class="kpi"&gt;&lt;div class="kpi-l"&gt;Média/Dia&lt;/div&gt;&lt;div class="kpi-v"&gt;${cFmt(dias.length?tFat/dias.length:0)}&lt;/div&gt;&lt;/div&gt;&lt;div class="kpi"&gt;&lt;div class="kpi-l"&gt;Procedimentos&lt;/div&gt;&lt;div class="kpi-v"&gt;${visco+artro+infil}&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;h3&gt;Detalhe por Dia&lt;/h3&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;table&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Data&lt;/th&gt;&lt;th style="text-align:center"&gt;Pac.&lt;/th&gt;&lt;th style="text-align:right"&gt;Faturamento&lt;/th&gt;&lt;th style="text-align:center"&gt;Visco&lt;/th&gt;&lt;th style="text-align:center"&gt;Artrocent.&lt;/th&gt;&lt;th style="text-align:center"&gt;Infiltr.&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;${rows}&lt;/tbody&gt;&lt;tfoot&gt;&lt;tr&gt;&lt;td&gt;&lt;strong&gt;TOTAL&lt;/strong&gt;&lt;/td&gt;&lt;td style="text-align:center"&gt;&lt;strong&gt;${tPac}&lt;/strong&gt;&lt;/td&gt;&lt;td style="text-align:right"&gt;&lt;strong&gt;${cFmt(tFat)}&lt;/strong&gt;&lt;/td&gt;&lt;td style="text-align:center"&gt;&lt;strong&gt;${visco}&lt;/strong&gt;&lt;/td&gt;&lt;td style="text-align:center"&gt;&lt;strong&gt;${artro}&lt;/strong&gt;&lt;/td&gt;&lt;td style="text-align:center"&gt;&lt;strong&gt;${infil}&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tfoot&gt;&lt;/table&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;button class="bp" onclick="window.print()"&gt;<span class="s1">🖨️</span> Salvar como PDF&lt;/button&gt;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>&lt;/body&gt;&lt;/html&gt;`;</p>
+<p class="p2"><span class="Apple-converted-space">  </span>const blob=new Blob([html],{type:'text/html;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`contabilidade_${contabMesesNomes[contabMes]}_${contabAno}.html`;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=&gt;URL.revokeObjectURL(url),1000);</p>
+<p class="p2">}</p>
+<p class="p2">&lt;/script&gt;</p>
+<p class="p2">&lt;/body&gt;</p>
+<p class="p2">&lt;/html&gt;</p>
+</body>
+</html>
