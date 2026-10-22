@@ -251,7 +251,7 @@ async function fcLoad(){
     if(res.error)throw new Error(res.error);
     var na=[],nf=[],no=[];
     (res.rows||[]).forEach(function(r){
-      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas',data_cirurgia:normData(r.data_cirurgia)||''};
+      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas',data_cirurgia:normData(r.data_cirurgia)||'',anotacoes:r.anotacoes||'',ultimo_contato:normData(r.ultimo_contato)||''};
       if(!p.data_cirurgia&&typeof poGet==='function')p.data_cirurgia=poGet(p).data_cirurgia||'';
       p.tab=fcTabPorStatus(p.status,p.tab);
       if(p.tab==='operados')no.push(p);else if(p.tab==='futuras')nf.push(p);else na.push(p);
@@ -415,10 +415,23 @@ function fcPoHTML(p,i){
     }
     h+='</div>';
   });
+  var uc=p.ultimo_contato||'',ucd=uc?Math.round((new Date(today()+'T12:00:00')-new Date(uc+'T12:00:00'))/86400000):null;
+  var lbl='font-size:11px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px';
+  h+='<div style="padding:12px 0 0;border-top:1px solid rgba(42,51,71,.6);margin-top:4px">'
+    +'<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">'
+    +'<label style="'+lbl+'">📞 Último contato</label>'
+    +'<input type="date" value="'+esc(uc)+'" onclick="event.stopPropagation()" onchange="fcPoSetSheet('+i+',\'ultimo_contato\',this.value)" style="'+inp+'">'
+    +'<button onclick="event.stopPropagation();fcPoSetSheet('+i+',\'ultimo_contato\',today())" style="background:rgba(73,103,80,.2);border:1px solid #5B9776;color:#81BBA1;border-radius:7px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:DM Sans,sans-serif">Hoje</button>'
+    +(ucd!==null?'<span style="font-size:13px;font-weight:600;color:'+(ucd>30?'#e8b84b':'#81BBA1')+'">'+(ucd<=0?'contato hoje':'há '+ucd+' dia'+(ucd===1?'':'s'))+'</span>':'<span style="font-size:12px;color:#8b94a8">sem contato registrado</span>')
+    +'</div>'
+    +'<label style="'+lbl+'">📝 Anotações especiais</label>'
+    +'<textarea onclick="event.stopPropagation()" onkeydown="event.stopPropagation()" onchange="fcPoSetSheet('+i+',\'anotacoes\',this.value)" placeholder="Anotações sobre a evolução, intercorrências, orientações..." style="'+inp+';display:block;width:100%;min-height:80px;margin-top:6px;resize:vertical;box-sizing:border-box">'+esc(p.anotacoes||'')+'</textarea>'
+    +'</div>';
   if(po.atualizado)h+='<div style="font-size:10px;color:#5b6b8a;margin-top:8px">Avaliação atualizada em '+new Date(po.atualizado+'T12:00:00').toLocaleDateString('pt-BR')+' · salva só neste navegador</div>';
   return h+'</div>';
 }
 function fcPoSet(i,k,v){var p=DB[fcTab][i];if(!p)return;if(k==='marcha'||k==='flexao'||k==='extensao'||k==='quadriceps'){var cur=parseInt(poGet(p)[k])||0;v=(cur===v)?0:v;}poSetCampo(p,k,v);fcRender();}
+async function fcPoSetSheet(i,k,v){var p=DB[fcTab][i];if(!p)return;p[k]=v;fcRender();await fcSave(p);}
 async function fcPoSetData(i,v){var p=DB[fcTab][i];if(!p)return;p.data_cirurgia=v;poSetCampo(p,'data_cirurgia',v);fcRender();await fcSave(p);}
 
 function fcViewBody(p,i){
