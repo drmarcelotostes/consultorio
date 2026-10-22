@@ -179,7 +179,22 @@ function syncOn(id){var e=document.getElementById(id);if(e)e.className='spin';do
 function syncOff(id){var e=document.getElementById(id);if(e)e.className='';document.getElementById('sync-bar').classList.remove('active');}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function fmtR(v){return v?'R$ '+Number(v).toLocaleString('pt-BR'):'—';}
-function today(){return new Date().toISOString().split('T')[0];}
+function dIso(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function today(){return dIso(new Date());}
+// Normaliza datas vindas da planilha (ex.: "Wed Sep 30 2026 00:00:00 GMT-0300 (...)", ISO, dd/mm/aaaa) para "aaaa-mm-dd"
+var MES_EN={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+function normData(v){
+  if(!v)return'';
+  if(v instanceof Date)return isNaN(v)?'':dIso(v);
+  var s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;
+  var m=s.match(/^\w{3} (\w{3}) (\d{1,2}) (\d{4})/);
+  if(m&&MES_EN[m[1]])return m[3]+'-'+MES_EN[m[1]]+'-'+String(m[2]).padStart(2,'0');
+  var b=s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if(b)return b[3]+'-'+b[2]+'-'+b[1];
+  var d=new Date(s);if(!isNaN(d))return dIso(d);
+  var iso=s.match(/^\d{4}-\d{2}-\d{2}/);return iso?iso[0]:s;
+}
 function fmtMoney(n){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n||0);}
 var TODAY=new Date();TODAY.setHours(0,0,0,0);
 function daysTo(ds){if(!ds)return null;return Math.round((new Date(ds+'T00:00:00')-TODAY)/864e5);}
@@ -726,8 +741,8 @@ async function atLoad(){
   var fech=[],ok=true;
   try{
     var res=await apiGet('atendimentos');if(res.error)throw new Error(res.error);
-    fech=(res.rows||[]).filter(function(r){return r.data===dia;}).map(function(r){
-      return{id:r.id,data:r.data,nome:r.nome||'',tipo:r.tipo||'',
+    fech=(res.rows||[]).filter(function(r){return normData(r.data)===dia;}).map(function(r){
+      return{id:r.id,data:normData(r.data),nome:r.nome||'',tipo:r.tipo||'',
         consulta_valor:parseFloat(r.consulta_valor)||700,
         consulta_nf:r.consulta_nf==='TRUE'||r.consulta_nf===true,
         pgto:{modo:r.pgto_modo||'',tipo1:r.pgto_tipo1||'',tipo2:r.pgto_tipo2||'',
@@ -1371,7 +1386,7 @@ function contabUpdMes(){
 var CONTAB_KEY='dmt_contab_v1';
 
 function contabGetLocal(){
-  try{var d=localStorage.getItem(CONTAB_KEY);return d?JSON.parse(d):[];}
+  try{var d=localStorage.getItem(CONTAB_KEY);var rows=d?JSON.parse(d):[];rows.forEach(function(r){if(r&&r.data)r.data=normData(r.data);});return rows;}
   catch(e){return[];}
 }
 function contabSaveLocal(rows){
@@ -1426,7 +1441,7 @@ async function cbSincronizar(){
   syncOn('cb-sync-icon');
   function mapRow(r){
     return{
-      id:r.id,data:r.data,nome:r.nome||'',tipo:r.tipo||'',
+      id:r.id,data:normData(r.data),nome:r.nome||'',tipo:r.tipo||'',
       consulta_valor:parseFloat(r.consulta_valor)||0,
       consulta_nf:r.consulta_nf==='TRUE'||r.consulta_nf===true,
       pgto_modo:r.pgto_modo||'',
