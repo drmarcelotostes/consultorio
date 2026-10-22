@@ -388,7 +388,9 @@ function poSetCampo(p,k,v){var all=poGetAll(),key=poKey(p);all[key]=all[key]||{}
 function poDataCir(p){return p.data_cirurgia||poGet(p).data_cirurgia||'';}
 function poDias(p){var d=poDataCir(p);if(!d)return null;var a=new Date(d+'T12:00:00'),b=new Date(today()+'T12:00:00');if(isNaN(a))return null;return Math.round((b-a)/86400000);}
 function poDiasLbl(n){if(n===null)return'';if(n<0)return'cirurgia em '+Math.abs(n)+' dia'+(Math.abs(n)===1?'':'s');if(n===0)return'operado hoje';return n+' dia'+(n===1?'':'s')+' de operado';}
-function fcPoChip(p){var n=poDias(p);if(n===null)return'<span class="dp" style="margin-left:6px;color:#8b94a8;border-color:#2a3347">sem data</span>';return'<span class="dp" style="margin-left:6px;color:#81BBA1;border-color:#5B9776;background:rgba(73,103,80,.15)">🗓 '+(n>=0?n+'d PO':poDiasLbl(n))+'</span>';}
+function poAlerta(p){var po=poGet(p);return PO_ITENS.some(function(it){var v=parseInt(po[it.k])||0;return v>0&&v<3;});}
+function poTri(sz){return'<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" style="vertical-align:middle;margin-left:6px;flex-shrink:0"><title>Nota abaixo de 3 estrelas</title><path d="M12 2L1 21h22L12 2z" fill="#e05252"/><rect x="11" y="9" width="2" height="6" fill="#fff"/><rect x="11" y="17" width="2" height="2" fill="#fff"/></svg>';}
+function fcPoChip(p){var al=poAlerta(p)?poTri(18):'';var n=poDias(p);if(n===null)return al+'<span class="dp" style="margin-left:6px;color:#8b94a8;border-color:#2a3347">sem data</span>';return al+'<span class="dp" style="margin-left:6px;color:#81BBA1;border-color:#5B9776;background:rgba(73,103,80,.15)">🗓 '+(n>=0?n+'d PO':poDiasLbl(n))+'</span>';}
 function fcPoStars(i,k,v){return[1,2,3,4,5].map(function(n){return'<span style="font-size:22px;cursor:pointer;line-height:1;color:'+(n<=v?'#e8b84b':'#3a4a63')+'" onclick="event.stopPropagation();fcPoSet('+i+',\''+k+'\','+n+')">'+(n<=v?'★':'☆')+'</span>';}).join('');}
 function fcPoHTML(p,i){
   var po=poGet(p),dc=poDataCir(p),n=poDias(p);
@@ -403,7 +405,7 @@ function fcPoHTML(p,i){
   PO_ITENS.forEach(function(it){
     var v=parseInt(po[it.k])||0;
     h+='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 0;border-top:1px solid rgba(42,51,71,.6)">'
-      +'<span style="min-width:230px;font-size:13px">'+it.l+'</span>'
+      +'<span style="min-width:230px;font-size:13px;display:inline-flex;align-items:center;gap:6px">'+it.l+(v>0&&v<3?poTri(16):'')+'</span>'
       +'<span style="display:inline-flex;gap:3px">'+fcPoStars(i,it.k,v)+'</span>';
     if(it.k==='flexao'){
       h+='<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#8b94a8">Graus: <input type="number" min="0" max="160" step="5" value="'+esc(po.flexao_graus||'')+'" placeholder="0" onclick="event.stopPropagation()" onchange="fcPoSet('+i+',\'flexao_graus\',this.value)" style="'+inp+';width:80px">°</span>';
@@ -478,7 +480,7 @@ function fcRender(){
     if(fc&&(p.convenio||'').toUpperCase().indexOf(fc)<0)return;
     filtered.push({p:p,i:i});
   });
-  filtered.sort(function(a,b){return(b.p.stars||0)-(a.p.stars||0);});
+  filtered.sort(function(a,b){if(fcTab==='operados'){var aa=poAlerta(a.p)?1:0,ab=poAlerta(b.p)?1:0;if(aa!==ab)return ab-aa;}return(b.p.stars||0)-(a.p.stars||0);});
   var g=document.getElementById('fc-grid');
   if(!filtered.length){g.innerHTML='<div class="fc-empty">Nenhum paciente encontrado.</div>';return;}
   g.innerHTML=filtered.map(function(x){
