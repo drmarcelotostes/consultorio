@@ -200,13 +200,13 @@ var TODAY=new Date();TODAY.setHours(0,0,0,0);
 function daysTo(ds){if(!ds)return null;return Math.round((new Date(ds+'T00:00:00')-TODAY)/864e5);}
 function dlCls(d){if(d===null)return'none';if(d<0)return'expired';if(d<=2)return'critical';if(d<=7)return'warning';return'safe';}
 function dlLbl(d){if(d===null)return null;if(d<0)return'⚠ VENCIDA há '+Math.abs(d)+'d';if(d===0)return'🚨 HOJE';if(d===1)return'🔴 AMANHÃ';return'📅 '+d+'d';}
-function sCls(s){s=(s||'').toUpperCase();if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'em-autorizacao';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'nao-solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'nao-necessita';return'vazio';}
-function sLbl(s){s=(s||'').toUpperCase();if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'Autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'Em Autorização';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'Não Solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'Não Necessita';return s||'—';}
+function sCls(s){s=(s||'').toUpperCase();if(s==='OPERADO')return'operado';if(s.indexOf('INDECISO')>=0)return'indeciso';if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'em-autorizacao';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'nao-solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'nao-necessita';return'vazio';}
+function sLbl(s){s=(s||'').toUpperCase();if(s==='OPERADO')return'Operado';if(s.indexOf('INDECISO')>=0)return'Indeciso';if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'Autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'Em Autorização';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'Não Solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'Não Necessita';return s||'—';}
 function isOk(v){return['ENTREGUE','ORIENTADO','PEDIDO ENTREGUE','PACIENTE JÁ FEZ'].indexOf((v||'').toUpperCase())>=0;}
 function isNA(v){return(v||'').toUpperCase()==='NÃO SE APLICA';}
 function fci(v){if(isNA(v))return{c:'warn',i:'—'};if(isOk(v))return{c:'ok',i:'✓'};return{c:'fail',i:'✗'};}
 function scoreP(p){var it=[p.sabao,p.exames,p.orient,p.anest,p.cardio,p.bactroban];var ap=it.filter(function(v){return!isNA(v);});return{done:ap.filter(isOk).length,total:ap.length};}
-var SEL_ST=['AUTORIZADO','EM AUTORIZAÇÃO','AINDA NÃO SOLICITADO','NÃO NECESSITA',''];
+var SEL_ST=['AUTORIZADO','EM AUTORIZAÇÃO','AINDA NÃO SOLICITADO','NÃO NECESSITA','PACIENTE INDECISO','OPERADO',''];
 var SEL_CK=['ENTREGUE','PEDIDO ENTREGUE','PACIENTE JÁ FEZ','ORIENTADO','NÃO ENTREGUE','NÃO ORIENTADO','FALTA ENTREGAR','FALTA SOLICITAR','SOLICITADO','NÃO SE APLICA','VAZIO'];
 var CONV_OPTS=['PARTICULAR','BRADESCO','UNIMED RIBEIRAO','UNIMED NACIONAL','UNIMED SEGUROS','SULAMERICA','AMIL','PORTO SEGURO','NOTREDAME','OUTRO'];
 var CONV_LBL={'PARTICULAR':'Particular','BRADESCO':'Bradesco','UNIMED RIBEIRAO':'Unimed Ribeirão','UNIMED NACIONAL':'Unimed Nacional','UNIMED SEGUROS':'Unimed Seguros','SULAMERICA':'SulAmérica','AMIL':'Amil','PORTO SEGURO':'Porto Seguro','NOTREDAME':'Notre Dame','OUTRO':'Outro'};
@@ -239,7 +239,9 @@ function goHome(){
 // ══════════════════════════════════════
 // FILA CIRÚRGICA
 // ══════════════════════════════════════
-var DB={ativas:[],futuras:[]};
+var DB={ativas:[],futuras:[],operados:[]};
+// Define a aba de destino pelo status: OPERADO → operados; INDECISO → futuras
+function fcTabPorStatus(status,atual){var s=(status||'').toUpperCase();if(s==='OPERADO')return'operados';if(s.indexOf('INDECISO')>=0)return'futuras';if(atual==='operados')return'ativas';return atual||'ativas';}
 var fcTab='ativas',fcOpen=new Set(),fcEdit=new Set(),fcInited=false;
 
 async function fcLoad(){
@@ -247,28 +249,31 @@ async function fcLoad(){
   try{
     var res=await apiGet('fila_cirurgica');
     if(res.error)throw new Error(res.error);
-    var na=[],nf=[];
+    var na=[],nf=[],no=[];
     (res.rows||[]).forEach(function(r){
       var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas'};
-      if(p.tab==='futuras')nf.push(p);else na.push(p);
+      p.tab=fcTabPorStatus(p.status,p.tab);
+      if(p.tab==='operados')no.push(p);else if(p.tab==='futuras')nf.push(p);else na.push(p);
     });
-    var idsS=na.concat(nf).map(function(p){return p.id;});
+    var idsS=na.concat(nf,no).map(function(p){return p.id;});
     var la=DB.ativas.filter(function(p){return!p.id||idsS.indexOf(p.id)<0;});
     var lf=DB.futuras.filter(function(p){return!p.id||idsS.indexOf(p.id)<0;});
-    DB.ativas=na.concat(la);DB.futuras=nf.concat(lf);
+    var lo=DB.operados.filter(function(p){return!p.id||idsS.indexOf(p.id)<0;});
+    DB.ativas=na.concat(la);DB.futuras=nf.concat(lf);DB.operados=no.concat(lo);
     fcRender();toast('✅ Fila sincronizada!');
   }catch(e){toast('Erro: '+e.message,true);}
   syncOff('fc-sync-icon');
 }
-async function fcSave(p){var res=await apiSave('fila_cirurgica',Object.assign({},p,{tab:fcTab}));if(res.ok){p.id=res.id;toast('💾 Salvo!');}else toast('Erro ao salvar',true);}
-async function fcRemove(id){if(id)await apiDel('fila_cirurgica',id);}
+async function fcSave(p){var res=await apiSave('fila_cirurgica',Object.assign({},p,{tab:p.tab||fcTab}));if(res.ok){p.id=res.id;toast('💾 Salvo!');}else toast('Erro ao salvar',true);}
+// Exclusão de pacientes desativada: nenhum paciente pode ser apagado da fila
+async function fcRemove(id){}
 
 function initFila(){
   if(fcInited){fcLoad();return;}
   fcInited=true;
   document.getElementById('fc-body').innerHTML=FC_CSS
-  +'<div class="fc-tabs"><button class="fc-tab active" id="fct-ativas" onclick="fcSetTab(\'ativas\')">Ativas</button><button class="fc-tab" id="fct-futuras" onclick="fcSetTab(\'futuras\')">Futuras</button><button class="fc-tab" id="fct-prazos" onclick="fcSetTab(\'prazos\')">⏰ Prazos</button></div>'
-  +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
+  +'<div class="fc-tabs"><button class="fc-tab active" id="fct-ativas" onclick="fcSetTab(\'ativas\')">Ativas</button><button class="fc-tab" id="fct-futuras" onclick="fcSetTab(\'futuras\')">Futuras</button><button class="fc-tab" id="fct-operados" onclick="fcSetTab(\'operados\')">✅ Operados</button><button class="fc-tab" id="fct-prazos" onclick="fcSetTab(\'prazos\')">⏰ Prazos</button></div>'
+  +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option><option>PACIENTE INDECISO</option><option>OPERADO</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
   +'<div class="fc-main"><div class="fc-grid" id="fc-grid"><div style="text-align:center;padding:60px;color:#8b94a8">⏳ Carregando...</div></div></div>';
   fcLoad();
 }
@@ -308,6 +313,10 @@ var FC_CSS='<style>'
 +'.bdg.nao-necessita .bdg-dot{background:#5b8fe8}'
 +'.bdg.vazio{background:rgba(139,148,168,.1);border-color:#8b94a8;color:#8b94a8}'
 +'.bdg.vazio .bdg-dot{background:#8b94a8}'
++'.bdg.operado{background:rgba(73,103,80,.25);border-color:#5B9776;color:#DBE7DC}'
++'.bdg.operado .bdg-dot{background:#DBE7DC}'
++'.bdg.indeciso{background:rgba(240,136,62,.1);border-color:#f0883e;color:#f0883e}'
++'.bdg.indeciso .bdg-dot{background:#f0883e}'
 +'.cvt{font-size:11px;padding:3px 7px;border-radius:5px;background:#1e2535;color:#8b94a8;border:1px solid #2a3347;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px}'
 +'.vlt{font-family:DM Mono,monospace;font-size:12px;color:#81BBA1}'
 +'.pp{font-size:10px;padding:2px 7px;border-radius:10px;font-family:DM Mono,monospace}'
@@ -363,7 +372,7 @@ var FC_CSS='<style>'
 
 function fcGetPrazos(){return[].concat(DB.ativas,DB.futuras).filter(function(p){return p.deadline;}).map(function(p){return{p:p,days:daysTo(p.deadline)};}).filter(function(x){return x.days!==null;}).sort(function(a,b){return a.days-b.days;});}
 function fcBadges(){var items=fcGetPrazos(),exp=items.filter(function(x){return x.days<0;}).length,soon=items.filter(function(x){return x.days>=0&&x.days<=7;}).length;var el=document.getElementById('fct-prazos');if(!el)return;el.querySelectorAll('.ab').forEach(function(e){e.remove();});if(exp>0)el.insertAdjacentHTML('beforeend','<span class="ab">'+exp+'</span>');else if(soon>0)el.insertAdjacentHTML('beforeend','<span class="ab warn">'+soon+'</span>');}
-function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','futuras','prazos'].forEach(function(id){var el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});var c=document.getElementById('fc-ctrl');if(c)c.style.display=t==='prazos'?'none':'flex';fcRender();}
+function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','futuras','operados','prazos'].forEach(function(id){var el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});var c=document.getElementById('fc-ctrl');if(c)c.style.display=t==='prazos'?'none':'flex';fcRender();}
 function fcStars(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcSetStar(event,'+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
 function fcSetStar(e,i,n){e.stopPropagation();var c=DB[fcTab][i].stars||0;DB[fcTab][i].stars=c===n?0:n;fcSave(DB[fcTab][i]);fcRender();}
 
@@ -406,7 +415,7 @@ function fcEditBody(p,i){
   +'</div></div>'
   +'<div class="es"><div class="est">Plano Cirúrgico</div><div class="efg"><textarea id="ee-plano-'+i+'" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">'+esc(p.plano||'')+'</textarea></div></div>'
   +'<div class="es" style="margin-bottom:0"><div class="est">Lembrete</div><div class="efg"><textarea id="ee-lembrete-'+i+'" style="min-height:52px" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()">'+esc(p.lembrete||'')+'</textarea></div></div>'
-  +'<div class="ef"><button class="btn-del" onclick="fcDelete('+i+');event.stopPropagation()">🗑️ Remover</button><button class="btn-gh" onclick="fcCancelEdit('+i+');event.stopPropagation()">Cancelar</button><button class="btn-sv" onclick="fcSaveEdit('+i+');event.stopPropagation()">💾 Salvar</button></div>'
+  +'<div class="ef"><button class="btn-gh" onclick="fcCancelEdit('+i+');event.stopPropagation()">Cancelar</button><button class="btn-sv" onclick="fcSaveEdit('+i+');event.stopPropagation()">💾 Salvar</button></div>'
   +'</div>';
 }
 
@@ -459,11 +468,17 @@ function fcRenderPrazos(){
 function fcToggle(i){fcOpen.has(i)?fcOpen.delete(i):fcOpen.add(i);fcRender();}
 function fcStartEdit(i){fcEdit.add(i);fcOpen.add(i);fcRender();setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
 function fcCancelEdit(i){fcEdit.delete(i);fcRender();}
-async function fcDelete(i){var p=DB[fcTab][i];fcOpen.delete(i);fcEdit.delete(i);DB[fcTab].splice(i,1);fcRender();if(p.id)await fcRemove(p.id);}
+async function fcDelete(i){toast('🔒 Pacientes não podem ser apagados da fila.',true);}
 async function fcSaveEdit(i){
   function gv(id){var el=document.getElementById(id+'-'+i);return el?el.value:'';}
   var se=document.getElementById('ee-stars-'+i);
   var p=Object.assign({},DB[fcTab][i],{nome:(gv('ee-nome').trim().toUpperCase()||DB[fcTab][i].nome),cirurgia:gv('ee-cirurgia').trim().toUpperCase(),convenio:gv('ee-convenio').toUpperCase(),valor:parseFloat(gv('ee-valor'))||null,status:gv('ee-status'),deadline:gv('ee-deadline'),sabao:gv('ee-sabao'),exames:gv('ee-exames'),orient:gv('ee-orient'),anest:gv('ee-anest'),cardio:gv('ee-cardio'),bactroban:gv('ee-bactroban'),plano:gv('ee-plano').trim(),lembrete:gv('ee-lembrete').trim(),stars:se?parseInt(se.value)||0:0,tab:fcTab});
+  var dest=fcTabPorStatus(p.status,fcTab);p.tab=dest;
+  if(dest!==fcTab){
+    DB[fcTab].splice(i,1);DB[dest].unshift(p);fcOpen.clear();fcEdit.clear();fcRender();
+    var nomes={ativas:'Ativas',futuras:'Futuras',operados:'Operados'};
+    await fcSave(p);toast('➡️ '+p.nome+' movido para '+nomes[dest]);return;
+  }
   DB[fcTab][i]=p;fcEdit.delete(i);fcOpen.add(i);fcRender();await fcSave(p);
 }
 async function fcAddNew(){
