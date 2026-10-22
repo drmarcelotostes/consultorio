@@ -251,7 +251,8 @@ async function fcLoad(){
     if(res.error)throw new Error(res.error);
     var na=[],nf=[],no=[];
     (res.rows||[]).forEach(function(r){
-      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas'};
+      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas',data_cirurgia:normData(r.data_cirurgia)||''};
+      if(!p.data_cirurgia&&typeof poGet==='function')p.data_cirurgia=poGet(p).data_cirurgia||'';
       p.tab=fcTabPorStatus(p.status,p.tab);
       if(p.tab==='operados')no.push(p);else if(p.tab==='futuras')nf.push(p);else na.push(p);
     });
@@ -376,6 +377,48 @@ function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['a
 function fcStars(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcSetStar(event,'+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
 function fcSetStar(e,i,n){e.stopPropagation();var c=DB[fcTab][i].stars||0;DB[fcTab][i].stars=c===n?0:n;fcSave(DB[fcTab][i]);fcRender();}
 
+// ── PÓS-OPERATÓRIO (aba Operados) — avaliações ficam só neste navegador, não vão para a planilha ──
+var PO_KEY='dmt_posop_v1';
+var PO_ITENS=[{k:'marcha',l:'Qualidade da marcha'},{k:'flexao',l:'Flexão'},{k:'extensao',l:'Extensão'},{k:'quadriceps',l:'Contração isométrica do quadríceps'}];
+var PO_EXT=['Extensão completa','Déficit de 10°','Déficit de 20°','Déficit de 30°'];
+function poKey(p){return p.id||('nome_'+p.nome);}
+function poGetAll(){try{var d=localStorage.getItem(PO_KEY);return d?JSON.parse(d):{};}catch(e){return{};}}
+function poGet(p){return poGetAll()[poKey(p)]||{};}
+function poSetCampo(p,k,v){var all=poGetAll(),key=poKey(p);all[key]=all[key]||{};all[key][k]=v;all[key].atualizado=today();try{localStorage.setItem(PO_KEY,JSON.stringify(all));}catch(e){}}
+function poDataCir(p){return p.data_cirurgia||poGet(p).data_cirurgia||'';}
+function poDias(p){var d=poDataCir(p);if(!d)return null;var a=new Date(d+'T12:00:00'),b=new Date(today()+'T12:00:00');if(isNaN(a))return null;return Math.round((b-a)/86400000);}
+function poDiasLbl(n){if(n===null)return'';if(n<0)return'cirurgia em '+Math.abs(n)+' dia'+(Math.abs(n)===1?'':'s');if(n===0)return'operado hoje';return n+' dia'+(n===1?'':'s')+' de operado';}
+function fcPoChip(p){var n=poDias(p);if(n===null)return'<span class="dp" style="margin-left:6px;color:#8b94a8;border-color:#2a3347">sem data</span>';return'<span class="dp" style="margin-left:6px;color:#81BBA1;border-color:#5B9776;background:rgba(73,103,80,.15)">🗓 '+(n>=0?n+'d PO':poDiasLbl(n))+'</span>';}
+function fcPoStars(i,k,v){return[1,2,3,4,5].map(function(n){return'<span style="font-size:22px;cursor:pointer;line-height:1;color:'+(n<=v?'#e8b84b':'#3a4a63')+'" onclick="event.stopPropagation();fcPoSet('+i+',\''+k+'\','+n+')">'+(n<=v?'★':'☆')+'</span>';}).join('');}
+function fcPoHTML(p,i){
+  var po=poGet(p),dc=poDataCir(p),n=poDias(p);
+  var inp='background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:6px 9px;font-size:13px;font-family:DM Sans,sans-serif;outline:none;color-scheme:dark';
+  var h='<div onclick="event.stopPropagation()" style="background:#1a2133;border:1px solid #2a3347;border-radius:10px;padding:14px 16px;margin-bottom:14px">';
+  h+='<div class="stl" style="margin-bottom:10px">🦵 Pós-operatório</div>';
+  h+='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">'
+    +'<label style="font-size:11px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px">Data da cirurgia</label>'
+    +'<input type="date" value="'+esc(dc)+'" onclick="event.stopPropagation()" onchange="fcPoSetData('+i+',this.value)" style="'+inp+'">'
+    +(n!==null?'<span style="font-size:14px;font-weight:700;color:#81BBA1;font-family:DM Mono,monospace">'+poDiasLbl(n)+'</span>':'<span style="font-size:12px;color:#8b94a8">Informe a data da cirurgia</span>')
+    +'</div>';
+  PO_ITENS.forEach(function(it){
+    var v=parseInt(po[it.k])||0;
+    h+='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 0;border-top:1px solid rgba(42,51,71,.6)">'
+      +'<span style="min-width:230px;font-size:13px">'+it.l+'</span>'
+      +'<span style="display:inline-flex;gap:3px">'+fcPoStars(i,it.k,v)+'</span>';
+    if(it.k==='flexao'){
+      h+='<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#8b94a8">Graus: <input type="number" min="0" max="160" step="5" value="'+esc(po.flexao_graus||'')+'" placeholder="0" onclick="event.stopPropagation()" onchange="fcPoSet('+i+',\'flexao_graus\',this.value)" style="'+inp+';width:80px">°</span>';
+    }
+    if(it.k==='extensao'){
+      h+='<select onclick="event.stopPropagation()" onchange="fcPoSet('+i+',\'extensao_grau\',this.value)" style="'+inp+'"><option value="">— selecione —</option>'+PO_EXT.map(function(o){return'<option'+(po.extensao_grau===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select>';
+    }
+    h+='</div>';
+  });
+  if(po.atualizado)h+='<div style="font-size:10px;color:#5b6b8a;margin-top:8px">Avaliação atualizada em '+new Date(po.atualizado+'T12:00:00').toLocaleDateString('pt-BR')+' · salva só neste navegador</div>';
+  return h+'</div>';
+}
+function fcPoSet(i,k,v){var p=DB[fcTab][i];if(!p)return;if(k==='marcha'||k==='flexao'||k==='extensao'||k==='quadriceps'){var cur=parseInt(poGet(p)[k])||0;v=(cur===v)?0:v;}poSetCampo(p,k,v);fcRender();}
+async function fcPoSetData(i,v){var p=DB[fcTab][i];if(!p)return;p.data_cirurgia=v;poSetCampo(p,'data_cirurgia',v);fcRender();await fcSave(p);}
+
 function fcViewBody(p,i){
   var days=daysTo(p.deadline),dc=dlCls(days),dl=dlLbl(days);
   var checks=[{l:'Sabão/Bactroban pré-op',v:p.sabao},{l:'Exames de sangue',v:p.exames},{l:'Orientações paciente',v:p.orient},{l:'Avaliação anestesista',v:p.anest},{l:'Avaliação cardiologista',v:p.cardio},{l:'Receita Bactroban',v:p.bactroban}];
@@ -383,7 +426,7 @@ function fcViewBody(p,i){
   var lb=p.lembrete?'<div class="lmb vgf">⚠️ '+esc(p.lembrete)+'</div>':'';
   var ck=checks.map(function(c){var ic=fci(c.v);return'<div class="ck-row"><div class="cki '+ic.c+'">'+ic.i+'</div><span>'+c.l+'</span><span class="cv2">'+esc(c.v||'—')+'</span></div>';}).join('');
   var pl=p.plano?'<div class="plb vgf"><span class="plbl">Plano Cirúrgico</span>'+esc(p.plano)+'</div>':'';
-  return'<div class="vb"><div class="vg">'+pb+lb+'<div><div class="stl">Checklist</div><div class="ck-list">'+ck+'</div></div><div><div class="stl">Detalhes</div><div class="ck-list"><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>'+esc(p.convenio||'—')+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">'+fmtR(p.valor)+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>'+sLbl(p.status)+'</span></div></div></div>'+pl+'</div><div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn-sv" onclick="fcStartEdit('+i+');event.stopPropagation()">✏️ Editar</button></div></div>';
+  return'<div class="vb">'+(fcTab==='operados'?fcPoHTML(p,i):'')+'<div class="vg">'+pb+lb+'<div><div class="stl">Checklist</div><div class="ck-list">'+ck+'</div></div><div><div class="stl">Detalhes</div><div class="ck-list"><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>'+esc(p.convenio||'—')+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">'+fmtR(p.valor)+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>'+sLbl(p.status)+'</span></div></div></div>'+pl+'</div><div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn-sv" onclick="fcStartEdit('+i+');event.stopPropagation()">✏️ Editar</button></div></div>';
 }
 
 function fcStarsEdit(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star-edit" id="estr-'+i+'-'+n+'" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcEditStar('+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
@@ -446,7 +489,7 @@ function fcRender(){
     return'<div class="fcard'+(isOpen?' open':'')+(isEdit?' editing':'')+cdl+'" id="fc-card-'+i+'">'
     +'<div class="fhdr" onclick="fcToggle('+i+')">'
     +'<div class="stars-col" onclick="event.stopPropagation()">'+fcStars(i,p.stars||0)+'</div>'
-    +'<div><div class="pname">'+esc(p.nome)+dp+'</div><div class="surg">'+esc(p.cirurgia)+'</div>'+(p.lembrete?'<div class="lmb-inline">⚠ '+esc(p.lembrete)+'</div>':'')+'</div>'
+    +'<div><div class="pname">'+esc(p.nome)+dp+(fcTab==='operados'?fcPoChip(p):'')+'</div><div class="surg">'+esc(p.cirurgia)+'</div>'+(p.lembrete?'<div class="lmb-inline">⚠ '+esc(p.lembrete)+'</div>':'')+'</div>'
     +'<span class="bdg '+sCls(p.status)+'"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span>'
     +'<span class="cvt">'+esc(p.convenio||'—')+'</span>'
     +'<span class="vlt">'+fmtR(p.valor)+'</span>'
@@ -474,6 +517,7 @@ async function fcSaveEdit(i){
   var se=document.getElementById('ee-stars-'+i);
   var p=Object.assign({},DB[fcTab][i],{nome:(gv('ee-nome').trim().toUpperCase()||DB[fcTab][i].nome),cirurgia:gv('ee-cirurgia').trim().toUpperCase(),convenio:gv('ee-convenio').toUpperCase(),valor:parseFloat(gv('ee-valor'))||null,status:gv('ee-status'),deadline:gv('ee-deadline'),sabao:gv('ee-sabao'),exames:gv('ee-exames'),orient:gv('ee-orient'),anest:gv('ee-anest'),cardio:gv('ee-cardio'),bactroban:gv('ee-bactroban'),plano:gv('ee-plano').trim(),lembrete:gv('ee-lembrete').trim(),stars:se?parseInt(se.value)||0:0,tab:fcTab});
   var dest=fcTabPorStatus(p.status,fcTab);p.tab=dest;
+  if(dest==='operados'&&!poDataCir(p)){p.data_cirurgia=today();poSetCampo(p,'data_cirurgia',p.data_cirurgia);}
   if(dest!==fcTab){
     DB[fcTab].splice(i,1);DB[dest].unshift(p);fcOpen.clear();fcEdit.clear();fcRender();
     var nomes={ativas:'Ativas',futuras:'Futuras',operados:'Operados'};
