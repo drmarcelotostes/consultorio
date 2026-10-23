@@ -697,7 +697,11 @@ function atTotal(a){var ti=AT_TIPOS.find(function(t){return t.id===a.tipo;});var
 function atGet(id){return atList.find(function(a){return a.id===id;});}
 
 function initAtend(){
-  if(atInited)return;
+  if(atInited){
+    if(atData!==today()){atRascPersist();atData=today();atUpdSub();atLoad();}
+    return;
+  }
+  atHojeRef=today();
   atInited=true;atData=today();
   document.getElementById('atend-body').innerHTML=atBodyHTML();
   atUpdSub();atCarregar();
@@ -934,7 +938,7 @@ function atRender(){
   var sb2=document.getElementById('atend-stats-bar');
   if(sb2)sb2.innerHTML='<div style="font-family:DM Mono,monospace;font-size:13px;color:#81BBA1;font-weight:600">'+fmtMoney(total)+'</div><div style="font-size:11px;color:#8b94a8">'+atList.length+' pac.</div>';
   var c=document.getElementById('at-cards');
-  if(!atList.length){c.innerHTML='<div class="at-empty">Nenhum atendimento registrado.<br><small style="color:#5b6b8a">Clique em + Paciente para adicionar.</small></div>';return;}
+  if(!atList.length){c.innerHTML=atAvisoData()+'<div class="at-empty">Nenhum atendimento registrado.<br><small style="color:#5b6b8a">Clique em + Paciente para adicionar.</small></div>';return;}
   c.innerHTML=atBanner()+atList.map(function(a,i){
     var t=atTotal(a);
     var ti=AT_TIPOS.find(function(x){return x.id===a.tipo;});
@@ -1226,7 +1230,29 @@ function atRascRemove(dia,id){
   if(!all[dia].length)delete all[dia];
   atRascSetAll(all);
 }
+function atAvisoData(){
+  if(!atData||atData===today())return'';
+  var d=new Date(atData+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
+  return'<div style="background:rgba(232,184,75,.15);border:2px solid #e8b84b;border-radius:10px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:20px">⚠️</span><span style="flex:1;font-size:13px;color:#e8b84b;font-weight:600">Atenção: você está vendo/lançando atendimentos de <u>'+d+'</u> — não é hoje.</span><button onclick="atGoToday()" style="background:#e8b84b;color:#111;border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif">Ir para hoje</button></div>';
+}
+// Virada do dia com a página aberta: se estava no "hoje" antigo, passa para o novo dia
+var atHojeRef='';
+setInterval(function(){
+  if(!atInited)return;
+  var h=today();
+  if(atHojeRef&&h!==atHojeRef){
+    if(atData===atHojeRef){atRascPersist();atData=h;atUpdSub();atLoad();toast('📅 Virou o dia — Atendimentos agora em '+new Date(h+'T12:00:00').toLocaleDateString('pt-BR'));}
+    else atRender();
+  }
+  atHojeRef=h;
+},60000);
+// Aviso de nova versão do sistema (evita usar versão antiga deixada aberta)
+var APP_VER='2026-10-23a';
+setInterval(async function(){try{var t=await fetch(location.pathname+'?cb='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();});var m=t.match(/var APP_VER='([^']+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('upd-bar')){var b=document.createElement('div');b.id='upd-bar';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#e8b84b;color:#111;text-align:center;padding:10px;font-weight:700;font-family:DM Sans,sans-serif;cursor:pointer';b.textContent='🔄 Há uma nova versão do sistema — clique aqui para atualizar';b.onclick=function(){location.reload();};document.body.appendChild(b);}}catch(e){}},10*60*1000);
 function atBanner(){
+  return atAvisoData()+atBannerBase();
+}
+function atBannerBase(){
   var nF=atList.filter(function(a){return a.fechado;}).length,nR=atList.length-nF;
   var h='<div style="background:#161b25;border:1px solid #2a3347;border-radius:10px;padding:10px 14px;font-size:12px;color:#8b94a8;margin-bottom:4px">';
   if(nF)h+='<span style="color:#e8b84b">🔒 '+nF+' gravado(s) na planilha</span>';
