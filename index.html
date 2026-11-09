@@ -274,7 +274,9 @@ function initFila(){
   fcInited=true;
   document.getElementById('fc-body').innerHTML=FC_CSS
   +'<div class="fc-tabs"><button class="fc-tab active" id="fct-ativas" onclick="fcSetTab(\'ativas\')">Ativas</button><button class="fc-tab" id="fct-futuras" onclick="fcSetTab(\'futuras\')">Futuras</button><button class="fc-tab" id="fct-operados" onclick="fcSetTab(\'operados\')">✅ Operados</button><button class="fc-tab" id="fct-prazos" onclick="fcSetTab(\'prazos\')">⏰ Prazos</button></div>'
-  +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option><option>PACIENTE INDECISO</option><option>OPERADO</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
+  +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option><option>PACIENTE INDECISO</option><option>OPERADO</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-pend" id="fc-btn-pend" onclick="fcPendOpen()">📋 Pendências de autorização</button><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
+  +'<div class="fc-ctrl fc-op-ctrl" id="fc-op-ctrl" style="display:none"><span class="fc-op-lbl">Ordenar</span><select id="fc-op-sort" onchange="fcRender()"><option value="">Padrão (alertas e estrelas)</option><option value="data_desc">Data da cirurgia — mais recente primeiro</option><option value="data_asc">Data da cirurgia — mais antiga primeiro</option><option value="nome_asc">Nome — A → Z</option><option value="nome_desc">Nome — Z → A</option></select><span class="fc-op-lbl">Tempo de cirurgia</span><select id="fc-op-tempo" onchange="fcRender()"><option value="">Todos</option><option value="0-30">Até 30 dias</option><option value="31-90">31 a 90 dias (1–3 meses)</option><option value="91-180">91 a 180 dias (3–6 meses)</option><option value="181-365">181 a 365 dias (6–12 meses)</option><option value="366-">Mais de 1 ano</option><option value="sem">Sem data de cirurgia</option></select><span class="fc-op-lbl">Data de</span><input type="date" id="fc-op-de" onchange="fcRender()"><span class="fc-op-lbl">até</span><input type="date" id="fc-op-ate" onchange="fcRender()"><button class="fc-op-clear" onclick="fcOpLimpar()">Limpar filtros</button><span class="fc-op-count" id="fc-op-count"></span></div>'
+  +'<div id="fc-pend-modal" class="fc-pend-modal" style="display:none" onclick="if(event.target===this)fcPendClose()"><div class="fc-pend-box" id="fc-pend-box"></div></div>'
   +'<div class="fc-main"><div class="fc-grid" id="fc-grid"><div style="text-align:center;padding:60px;color:#8b94a8">⏳ Carregando...</div></div></div>';
   fcLoad();
 }
@@ -290,6 +292,28 @@ var FC_CSS='<style>'
 +'#fc-search{width:220px}'
 +'.fc-btn-new{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;font-size:13px;font-family:DM Sans,sans-serif;cursor:pointer;background:#496750;color:#DBE7DC;font-weight:500}'
 +'.fc-main{padding:16px 20px}'
++'.fc-btn-pend{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid #e8b84b;font-size:13px;font-family:DM Sans,sans-serif;cursor:pointer;background:rgba(232,184,75,.12);color:#e8b84b;font-weight:500}'
++'.fc-btn-pend .ab{position:static;margin-left:4px}'
++'.fc-op-ctrl{padding-top:0}'
++'.fc-op-lbl{font-size:11px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px}'
++'.fc-op-ctrl input[type=date]{color-scheme:dark}'
++'.fc-op-clear{background:none;border:1px solid #2a3347;color:#8b94a8;border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:DM Sans,sans-serif}'
++'.fc-op-count{font-size:12px;color:#81BBA1;margin-left:auto}'
++'.fc-pend-modal{position:fixed;inset:0;background:rgba(5,8,14,.72);z-index:999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}'
++'.fc-pend-box{background:#161b25;border:1px solid #2a3347;border-radius:14px;width:100%;max-width:1100px;padding:18px 20px;color:#e8edf5;font-family:DM Sans,sans-serif}'
++'.fc-pend-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}'
++'.fc-pend-hd h3{margin:0;font-size:17px;color:#e8b84b;font-weight:600}'
++'.fc-pend-sub{font-size:12px;color:#8b94a8;margin-bottom:14px}'
++'.fc-pend-tb{width:100%;border-collapse:collapse;font-size:13px}'
++'.fc-pend-tb th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#8b94a8;padding:8px;border-bottom:1px solid #2a3347;font-weight:600}'
++'.fc-pend-tb td{padding:9px 8px;border-bottom:1px solid rgba(42,51,71,.6);vertical-align:top}'
++'.fc-pend-tb tr:hover td{background:#1a2133}'
++'.fc-pend-old{color:#e05252;font-weight:600}'
++'.fc-pend-mid{color:#e8b84b;font-weight:600}'
++'.fc-pend-ok{color:#81BBA1}'
++'.fc-pend-btn{background:rgba(73,103,80,.2);border:1px solid #5B9776;color:#81BBA1;border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer;font-family:DM Sans,sans-serif;white-space:nowrap}'
++'.fc-pend-x{margin-left:auto;background:none;border:1px solid #2a3347;color:#8b94a8;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}'
++'@media(max-width:760px){.fc-pend-tb .hm{display:none}}'
 +'.fc-grid{display:flex;flex-direction:column;gap:8px}'
 +'.fcard{background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden}'
 +'.fcard.editing{border-color:#5B9776}'
@@ -373,7 +397,7 @@ var FC_CSS='<style>'
 
 function fcGetPrazos(){return[].concat(DB.ativas,DB.futuras).filter(function(p){return p.deadline;}).map(function(p){return{p:p,days:daysTo(p.deadline)};}).filter(function(x){return x.days!==null;}).sort(function(a,b){return a.days-b.days;});}
 function fcBadges(){var items=fcGetPrazos(),exp=items.filter(function(x){return x.days<0;}).length,soon=items.filter(function(x){return x.days>=0&&x.days<=7;}).length;var el=document.getElementById('fct-prazos');if(!el)return;el.querySelectorAll('.ab').forEach(function(e){e.remove();});if(exp>0)el.insertAdjacentHTML('beforeend','<span class="ab">'+exp+'</span>');else if(soon>0)el.insertAdjacentHTML('beforeend','<span class="ab warn">'+soon+'</span>');}
-function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','futuras','operados','prazos'].forEach(function(id){var el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});var c=document.getElementById('fc-ctrl');if(c)c.style.display=t==='prazos'?'none':'flex';fcRender();}
+function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','futuras','operados','prazos'].forEach(function(id){var el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});var c=document.getElementById('fc-ctrl');if(c)c.style.display=t==='prazos'?'none':'flex';fcCtrlVis();fcRender();}
 function fcStars(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcSetStar(event,'+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
 function fcSetStar(e,i,n){e.stopPropagation();var c=DB[fcTab][i].stars||0;DB[fcTab][i].stars=c===n?0:n;fcSave(DB[fcTab][i]);fcRender();}
 
@@ -478,7 +502,7 @@ function fcEditBody(p,i){
 }
 
 function fcRender(){
-  fcBadges();
+  fcBadges();fcCtrlVis();
   if(fcTab==='prazos'){fcRenderPrazos();return;}
   var q=((document.getElementById('fc-search')||{value:''}).value).toLowerCase();
   var fs=((document.getElementById('fc-fs')||{value:''}).value).toUpperCase();
@@ -491,9 +515,13 @@ function fcRender(){
     if(q&&(p.nome+p.cirurgia+p.convenio+p.lembrete+p.plano).toLowerCase().indexOf(q)<0)return;
     if(fs&&(p.status||'').toUpperCase().indexOf(fs)<0)return;
     if(fc&&(p.convenio||'').toUpperCase().indexOf(fc)<0)return;
+    if(fcTab==='operados'&&!fcOpPassa(p))return;
     filtered.push({p:p,i:i});
   });
-  filtered.sort(function(a,b){if(fcTab==='operados'){var aa=poAlerta(a.p)?1:0,ab=poAlerta(b.p)?1:0;if(aa!==ab)return ab-aa;}return(b.p.stars||0)-(a.p.stars||0);});
+  var opSort=fcTab==='operados'?((document.getElementById('fc-op-sort')||{value:''}).value):'';
+  if(opSort){filtered.sort(function(a,b){return fcOpCmp(a.p,b.p,opSort);});}
+  else filtered.sort(function(a,b){if(fcTab==='operados'){var aa=poAlerta(a.p)?1:0,ab=poAlerta(b.p)?1:0;if(aa!==ab)return ab-aa;}return(b.p.stars||0)-(a.p.stars||0);});
+  var oc=document.getElementById('fc-op-count');if(oc)oc.textContent=fcTab==='operados'?(filtered.length+' de '+all.length+' operados'):'';
   var g=document.getElementById('fc-grid');
   if(!filtered.length){g.innerHTML='<div class="fc-empty">Nenhum paciente encontrado.</div>';return;}
   g.innerHTML=filtered.map(function(x){
@@ -515,6 +543,66 @@ function fcRender(){
     +'</div>';
   }).join('');
 }
+
+// ── Filtros da aba Operados ──
+function fcCtrlVis(){
+  var op=document.getElementById('fc-op-ctrl');if(op)op.style.display=fcTab==='operados'?'flex':'none';
+  var bp=document.getElementById('fc-btn-pend');
+  if(bp){bp.style.display=fcTab==='ativas'?'inline-flex':'none';var n=fcPendLista().length;bp.innerHTML='📋 Pendências de autorização'+(n?'<span class="ab warn">'+n+'</span>':'');}
+}
+function fcOpPassa(p){
+  var t=(document.getElementById('fc-op-tempo')||{value:''}).value,de=(document.getElementById('fc-op-de')||{value:''}).value,ate=(document.getElementById('fc-op-ate')||{value:''}).value;
+  var d=poDataCir(p),n=poDias(p);
+  if(t==='sem'){if(d)return false;}
+  else if(t){if(n===null)return false;var pr=t.split('-'),mn=parseInt(pr[0]),mx=pr[1]===''?Infinity:parseInt(pr[1]);if(n<mn||n>mx)return false;}
+  if(de&&(!d||d<de))return false;
+  if(ate&&(!d||d>ate))return false;
+  return true;
+}
+function fcOpCmp(a,b,mode){
+  if(mode==='nome_asc')return(a.nome||'').localeCompare(b.nome||'','pt-BR');
+  if(mode==='nome_desc')return(b.nome||'').localeCompare(a.nome||'','pt-BR');
+  var da=poDataCir(a),db=poDataCir(b);
+  if(!da&&!db)return 0;if(!da)return 1;if(!db)return -1;   // sem data sempre no fim
+  return mode==='data_asc'?(da<db?-1:da>db?1:0):(da<db?1:da>db?-1:0);
+}
+function fcOpLimpar(){['fc-op-sort','fc-op-tempo','fc-op-de','fc-op-ate'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});fcRender();}
+
+// ── Pendências de autorização (aba Ativas): Em autorização + Ainda não solicitado, da mais antiga à mais recente ──
+function fcEntrada(p){var m=/(\d{13})/.exec(p.id||'');if(!m)return'';return dIso(new Date(parseInt(m[1])));}
+function fcDiasDesde(d){if(!d)return null;return Math.round((new Date(today()+'T12:00:00')-new Date(d+'T12:00:00'))/864e5);}
+function fcPendLista(){
+  return DB.ativas.filter(function(p){var c=sCls(p.status);return c==='em-autorizacao'||c==='nao-solicitado';})
+    .map(function(p){return{p:p,ent:fcEntrada(p)};})
+    .sort(function(a,b){if(!a.ent&&!b.ent)return 0;if(!a.ent)return 1;if(!b.ent)return -1;return a.ent<b.ent?-1:a.ent>b.ent?1:0;});
+}
+function fcFmtD(d){return d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—';}
+function fcPendOpen(){fcPendDraw();document.getElementById('fc-pend-modal').style.display='flex';}
+function fcPendClose(){document.getElementById('fc-pend-modal').style.display='none';}
+function fcPendDraw(){
+  var L=fcPendLista(),box=document.getElementById('fc-pend-box');if(!box)return;
+  var nEm=L.filter(function(x){return sCls(x.p.status)==='em-autorizacao';}).length,nNs=L.length-nEm;
+  var h='<div class="fc-pend-hd"><h3>📋 Pendências de autorização</h3><span class="bdg em-autorizacao"><span class="bdg-dot"></span>Em autorização: '+nEm+'</span><span class="bdg nao-solicitado"><span class="bdg-dot"></span>Não solicitado: '+nNs+'</span><button class="fc-pend-x" onclick="fcPendClose()">✕ Fechar</button></div>';
+  h+='<div class="fc-pend-sub">Pacientes da aba Ativas ainda sem autorização, do mais antigo ao mais recente (data de entrada na fila). Use semanalmente para atualizar a situação com o convênio/seguro ou lembrar o paciente. "Contato hoje" registra a data do último contato na planilha.</div>';
+  if(!L.length){box.innerHTML=h+'<div class="fc-empty">Nenhum paciente aguardando autorização. 🎉</div>';return;}
+  h+='<table class="fc-pend-tb"><thead><tr><th>#</th><th>Entrada na fila</th><th>Paciente</th><th class="hm">Convênio</th><th>Status</th><th>Último contato</th><th class="hm">Lembrete</th><th></th></tr></thead><tbody>';
+  L.forEach(function(x,k){
+    var p=x.p,i=DB.ativas.indexOf(p),dd=fcDiasDesde(x.ent),uc=p.ultimo_contato||'',ud=fcDiasDesde(uc);
+    var cls=dd===null?'':dd>60?'fc-pend-old':dd>21?'fc-pend-mid':'fc-pend-ok';
+    var ucls=ud===null?'fc-pend-old':ud>7?'fc-pend-mid':'fc-pend-ok';
+    h+='<tr><td style="color:#8b94a8">'+(k+1)+'</td>'
+      +'<td><div>'+fcFmtD(x.ent)+'</div><div class="'+cls+'" style="font-size:11px">'+(dd===null?'sem data':dd===0?'hoje':'há '+dd+' dia'+(dd===1?'':'s'))+'</div></td>'
+      +'<td><div style="font-weight:600">'+esc(p.nome)+'</div><div style="font-size:11px;color:#8b94a8">'+esc(p.cirurgia||'—')+'</div></td>'
+      +'<td class="hm">'+esc(p.convenio||'—')+'</td>'
+      +'<td><span class="bdg '+sCls(p.status)+'" style="font-size:10px"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span></td>'
+      +'<td><div>'+fcFmtD(uc)+'</div><div class="'+ucls+'" style="font-size:11px">'+(ud===null?'sem contato':ud<=0?'hoje':'há '+ud+' dia'+(ud===1?'':'s'))+'</div></td>'
+      +'<td class="hm" style="font-size:12px;color:#c9d1e0;max-width:260px">'+esc(p.lembrete||'—')+'</td>'
+      +'<td style="text-align:right"><button class="fc-pend-btn" onclick="fcPendContato('+i+')">📞 Contato hoje</button> <button class="fc-pend-btn" style="border-color:#2a3347;color:#8b94a8;background:none" onclick="fcPendAbrir('+i+')">Abrir</button></td></tr>';
+  });
+  box.innerHTML=h+'</tbody></table>';
+}
+async function fcPendContato(i){var p=DB.ativas[i];if(!p)return;p.ultimo_contato=today();fcPendDraw();await fcSave(p);}
+function fcPendAbrir(i){fcPendClose();if(fcTab!=='ativas')fcSetTab('ativas');fcOpen.clear();fcEdit.clear();fcOpen.add(i);fcRender();setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},60);}
 
 function fcRenderPrazos(){
   var items=fcGetPrazos();
