@@ -278,7 +278,8 @@ function initFila(){
   +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option><option>PACIENTE INDECISO</option><option>OPERADO</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-pend" id="fc-btn-pend" onclick="fcPendOpen()">📋 Pendências de autorização</button><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
   +'<div class="fc-ctrl fc-op-ctrl" id="fc-op-ctrl" style="display:none"><span class="fc-op-lbl">Ordenar</span><select id="fc-op-sort" onchange="fcRender()"><option value="">Padrão (alertas e estrelas)</option><option value="data_desc">Data da cirurgia — mais recente primeiro</option><option value="data_asc">Data da cirurgia — mais antiga primeiro</option><option value="nome_asc">Nome — A → Z</option><option value="nome_desc">Nome — Z → A</option></select><span class="fc-op-lbl">Tempo de cirurgia</span><select id="fc-op-tempo" onchange="fcRender()"><option value="">Todos</option><option value="0-30">Até 30 dias</option><option value="31-90">31 a 90 dias (1–3 meses)</option><option value="91-180">91 a 180 dias (3–6 meses)</option><option value="181-365">181 a 365 dias (6–12 meses)</option><option value="366-">Mais de 1 ano</option><option value="sem">Sem data de cirurgia</option></select><span class="fc-op-lbl">Data de</span><input type="date" id="fc-op-de" onchange="fcRender()"><span class="fc-op-lbl">até</span><input type="date" id="fc-op-ate" onchange="fcRender()"><button class="fc-op-clear" onclick="fcOpLimpar()">Limpar filtros</button><span class="fc-op-count" id="fc-op-count"></span></div>'
   +'<div id="fc-pend-modal" class="fc-pend-modal" style="display:none" onclick="if(event.target===this)fcPendClose()"><div class="fc-pend-box" id="fc-pend-box"></div></div>'
-  +'<div class="fc-main"><div class="fc-grid" id="fc-grid"><div style="text-align:center;padding:60px;color:#8b94a8">⏳ Carregando...</div></div></div>';
+  +'<div id="fc-dup-modal" class="fc-pend-modal" style="display:none" onclick="if(event.target===this)fcDupClose()"><div class="fc-pend-box" id="fc-dup-box" style="max-width:900px"></div></div>'
+  +'<div class="fc-main"><div id="fc-dup-banner"></div><div class="fc-grid" id="fc-grid"><div style="text-align:center;padding:60px;color:#8b94a8">⏳ Carregando...</div></div></div>';
   fcLoad();
 }
 
@@ -312,6 +313,12 @@ var FC_CSS='<style>'
 +'.fc-pend-old{color:#e05252;font-weight:600}'
 +'.fc-pend-mid{color:#e8b84b;font-weight:600}'
 +'.fc-pend-ok{color:#81BBA1}'
++'.fc-dup-ban{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(224,82,82,.08);border:1px solid #e05252;color:#f0b0b0;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:13px}'
++'.fc-dup-tb{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}'
++'.fc-dup-tb th{text-align:left;color:#8b94a8;font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px;border-bottom:1px solid #2a3347}'
++'.fc-dup-tb td{padding:8px;border-bottom:1px solid #1e2535;vertical-align:top}'
++'.fc-dup-tb label{display:flex;gap:6px;align-items:flex-start;cursor:pointer;white-space:pre-wrap;word-break:break-word}'
++'.fc-dup-tb input{margin-top:3px;accent-color:#81BBA1}'
 +'.fc-pend-dt{background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:6px;padding:3px 6px;font-size:12px;font-family:\'DM Sans\',sans-serif;color-scheme:dark}'
 +'.fc-pend-btn{background:rgba(73,103,80,.2);border:1px solid #5B9776;color:#81BBA1;border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer;font-family:DM Sans,sans-serif;white-space:nowrap}'
 +'.fc-pend-x{margin-left:auto;background:none;border:1px solid #2a3347;color:#8b94a8;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}'
@@ -505,7 +512,7 @@ function fcEditBody(p,i){
 }
 
 function fcRender(){
-  fcBadges();fcCtrlVis();
+  fcBadges();fcCtrlVis();fcDupBanner();
   if(fcTab==='prazos'){fcRenderPrazos();return;}
   var q=((document.getElementById('fc-search')||{value:''}).value).toLowerCase();
   var fs=((document.getElementById('fc-fs')||{value:''}).value).toUpperCase();
@@ -615,6 +622,55 @@ function fcPendDraw(){
 async function fcPendContato(i){var p=DB.ativas[i];if(!p)return;p.ultimo_contato=today();fcPendDraw();await fcSave(p);}
 function fcPendAbrir(i){fcPendClose();if(fcTab!=='ativas')fcSetTab('ativas');fcOpen.clear();fcEdit.clear();fcOpen.add(i);fcRender();setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},60);}
 
+// ── Pacientes duplicados (mesmo nome em qualquer aba): revisar e juntar num só cadastro ──
+function fcNomeKey(n){return(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim();}
+function fcTodos(){var L=[];['ativas','futuras','operados'].forEach(function(t){DB[t].forEach(function(p){L.push({p:p,t:t});});});return L;}
+function fcDupGrupos(){var m={};fcTodos().forEach(function(x){var k=fcNomeKey(x.p.nome);if(!k||k==='NOVO PACIENTE')return;(m[k]=m[k]||[]).push(x);});return Object.keys(m).filter(function(k){return m[k].length>1;}).map(function(k){return m[k];});}
+function fcDupBanner(){var b=document.getElementById('fc-dup-banner');if(!b)return;var G=fcDupGrupos();if(!G.length){b.innerHTML='';return;}
+  b.innerHTML='<div class="fc-dup-ban">⚠️ <span><b>'+G.length+' paciente'+(G.length>1?'s':'')+' com cadastro duplicado:</b> '+G.map(function(g){return esc(g[0].p.nome);}).join(', ')+'</span><button class="fc-pend-btn" style="margin-left:auto;border-color:#e05252;color:#f0b0b0;background:rgba(224,82,82,.12)" onclick="fcDupOpen(0)">Revisar e juntar</button></div>';}
+var FC_DUP_CAMPOS=[['cirurgia','Cirurgia'],['status','Status'],['inicio_status','Início do status'],['convenio','Convênio'],['valor','Valor'],['deadline','Prazo limite'],['stars','Prioridade (estrelas)'],['sabao','Sabão/Bactroban'],['exames','Exames'],['orient','Orientações'],['anest','Anestesista'],['cardio','Cardiologista'],['bactroban','Rec. Bactroban'],['data_cirurgia','Data da cirurgia'],['ultimo_contato','Último contato'],['plano','Plano cirúrgico'],['lembrete','Lembrete'],['anotacoes','Anotações']];
+var FC_DUP_TEXTO={plano:1,lembrete:1,anotacoes:1};
+var fcDupAtual=null;
+function fcPreench(p){return FC_DUP_CAMPOS.filter(function(c){var v=p[c[0]];return v!==null&&v!==undefined&&String(v).trim()!==''&&v!==0;}).length+(p.plano||'').length/1000;}
+function fcDupVal(p,k){var v=p[k];if(k==='inicio_status')v=fcInicioStatus(p);if(k==='data_cirurgia')v=poDataCir(p);if(k==='valor')return v?fmtR(v):'';if(k==='stars')return v?('★'.repeat(v)):'';if(k==='inicio_status'||k==='data_cirurgia'||k==='ultimo_contato'||k==='deadline')return v&&/^\d{4}-\d\d-\d\d$/.test(v)?fcFmtD(v):(v||'');return v===null||v===undefined?'':String(v);}
+function fcDupOpen(gi){var G=fcDupGrupos();if(!G.length){fcDupClose();return;}var g=G[Math.min(gi,G.length-1)];
+  // principal = cadastro mais completo (empate: o mais antigo)
+  var L=g.slice(0,2).sort(function(a,b){var d=fcPreench(b.p)-fcPreench(a.p);if(Math.abs(d)>0.0001)return d;return fcEntrada(a.p)<fcEntrada(b.p)?-1:1;});
+  fcDupAtual={a:L[0],b:L[1],gi:gi};var A=L[0].p,B=L[1].p;
+  var h='<div class="fc-pend-hd"><h3>🔗 Juntar cadastros duplicados</h3><span style="color:#8b94a8;font-size:13px">'+esc(A.nome)+(G.length>1?' — '+(Math.min(gi,G.length-1)+1)+' de '+G.length:'')+'</span><button class="fc-pend-x" onclick="fcDupClose()">✕ Fechar</button></div>';
+  h+='<div class="fc-pend-sub">Os dois cadastros serão unidos em um só. Já deixei marcado o valor do cadastro mais completo, ou o do outro quando ele estava vazio. Nos textos diferentes, a opção marcada é juntar os dois. Confira e altere o que precisar.</div>';
+  h+='<table class="fc-dup-tb"><thead><tr><th style="width:150px">Campo</th><th>Cadastro A — entrou em '+fcFmtD(fcEntrada(A))+' ('+({ativas:'Ativas',futuras:'Futuras',operados:'Operados'})[L[0].t]+')</th><th>Cadastro B — entrou em '+fcFmtD(fcEntrada(B))+' ('+({ativas:'Ativas',futuras:'Futuras',operados:'Operados'})[L[1].t]+')</th></tr></thead><tbody>';
+  var iguais=0;
+  FC_DUP_CAMPOS.forEach(function(c){var k=c[0],va=fcDupVal(A,k),vb=fcDupVal(B,k);
+    if(va.trim()===vb.trim()){iguais++;return;}
+    var def=va.trim()?'a':'b';
+    var junta=FC_DUP_TEXTO[k]&&va.trim()&&vb.trim()&&va.indexOf(vb.trim())<0&&vb.indexOf(va.trim())<0;
+    if(junta)def='ab';
+    function opt(v,lab,txt){return'<label><input type="radio" name="fcdup-'+k+'" value="'+v+'"'+(def===v?' checked':'')+'><span>'+(txt.trim()?esc(txt):'<i style="color:#5d6680">(vazio)</i>')+'</span></label>';}
+    h+='<tr><td style="color:#8b94a8">'+c[1]+'</td><td>'+opt('a','A',va)+'</td><td>'+opt('b','B',vb)+(junta?'<label style="margin-top:6px;color:#81BBA1"><input type="radio" name="fcdup-'+k+'" value="ab" checked><span>Juntar os dois textos</span></label>':'')+'</td></tr>';
+  });
+  h+='</tbody></table><div style="font-size:12px;color:#8b94a8;margin-top:8px">'+iguais+' campo(s) iguais nos dois cadastros.</div>';
+  h+='<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn-gh" onclick="fcDupClose()">Cancelar</button><button class="btn-sv" id="fc-dup-ok" onclick="fcDupJuntar()">🔗 Juntar em um só cadastro</button></div>';
+  document.getElementById('fc-dup-box').innerHTML=h;document.getElementById('fc-dup-modal').style.display='flex';}
+function fcDupClose(){document.getElementById('fc-dup-modal').style.display='none';fcDupAtual=null;}
+async function fcDupJuntar(){if(!fcDupAtual)return;var A=fcDupAtual.a.p,B=fcDupAtual.b.p,gi=fcDupAtual.gi;
+  var btn=document.getElementById('fc-dup-ok');if(btn){btn.disabled=true;btn.textContent='Juntando...';}
+  var M=Object.assign({},B,A);
+  FC_DUP_CAMPOS.forEach(function(c){var k=c[0],r=document.querySelector('input[name="fcdup-'+k+'"]:checked');if(!r)return;
+    var va=k==='inicio_status'?fcInicioStatus(A):k==='data_cirurgia'?poDataCir(A):A[k],vb=k==='inicio_status'?fcInicioStatus(B):k==='data_cirurgia'?poDataCir(B):B[k];
+    if(r.value==='a')M[k]=va;else if(r.value==='b')M[k]=vb;else M[k]=String(va||'').trim()+'\n\n'+String(vb||'').trim();});
+  M.id=A.id;M.tab=fcTabPorStatus(M.status,fcDupAtual.a.t);
+  // dados pós-op guardados no navegador: completa com os do cadastro B
+  var pa=poGet(A),pb=poGet(B);Object.keys(pb).forEach(function(k){if(pa[k]===undefined||pa[k]==='')poSetCampo(M,k,pb[k]);});
+  if(M.inicio_status)poSetCampo(M,'inicio_status',M.inicio_status);if(M.data_cirurgia)poSetCampo(M,'data_cirurgia',M.data_cirurgia);
+  ['ativas','futuras','operados'].forEach(function(t){DB[t]=DB[t].filter(function(p){return p!==A&&p!==B;});});
+  DB[M.tab].unshift(M);fcOpen.clear();fcEdit.clear();
+  try{var r1=await apiSave('fila_cirurgica',M);if(!r1.ok)throw new Error('falha ao salvar');if(r1.id)M.id=r1.id;
+    if(B.id){var r2=await apiDel('fila_cirurgica',B.id);if(r2&&r2.error)throw new Error(r2.error);}
+    toast('🔗 Cadastros de '+M.nome+' unidos');}
+  catch(e){toast('Erro ao juntar: '+e.message+' — sincronize e tente de novo',true);}
+  fcDupClose();fcRender();if(fcDupGrupos().length)fcDupOpen(gi);}
+
 function fcRenderPrazos(){
   var items=fcGetPrazos();
   function sec(tit,list,icon){if(!list.length)return'';return'<div style="padding:12px 18px 0"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8b94a8;font-weight:600;margin-bottom:8px">'+icon+' '+tit+'</div></div>'+list.map(function(x){var p=x.p,days=x.days;return'<div class="urg-row '+dlCls(days)+'"><div><div style="font-size:13px;font-weight:500">'+esc(p.nome)+'</div><div style="font-size:11px;color:#8b94a8">'+esc(p.cirurgia)+'</div></div><span class="dp '+dlCls(days)+'">'+dlLbl(days)+'</span><span style="font-size:11px;color:#8b94a8">'+esc(p.convenio||'—')+'</span><span class="bdg '+sCls(p.status)+'" style="font-size:10px"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span><span style="font-size:11px;color:#8b94a8">'+p.deadline+'</span></div>';}).join('');}
@@ -626,8 +682,13 @@ function fcToggle(i){fcOpen.has(i)?fcOpen.delete(i):fcOpen.add(i);fcRender();}
 function fcStartEdit(i){fcEdit.add(i);fcOpen.add(i);fcRender();setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
 function fcCancelEdit(i){fcEdit.delete(i);fcRender();}
 async function fcDelete(i){toast('🔒 Pacientes não podem ser apagados da fila.',true);}
+var fcDupAviso={};
 async function fcSaveEdit(i){
   function gv(id){var el=document.getElementById(id+'-'+i);return el?el.value:'';}
+  var nk=fcNomeKey(gv('ee-nome').trim()||DB[fcTab][i].nome),atual=DB[fcTab][i];
+  var ja=nk&&nk!=='NOVO PACIENTE'?fcTodos().filter(function(x){return x.p!==atual&&fcNomeKey(x.p.nome)===nk;})[0]:null;
+  if(ja&&fcDupAviso[i]!==nk){fcDupAviso[i]=nk;toast('⚠️ Já existe '+ja.p.nome+' na aba '+({ativas:'Ativas',futuras:'Futuras',operados:'Operados'})[ja.t]+'. Edite o cadastro existente; para criar outro mesmo assim, clique Salvar de novo.',true);return;}
+  delete fcDupAviso[i];
   var se=document.getElementById('ee-stars-'+i);
   var p=Object.assign({},DB[fcTab][i],{nome:(gv('ee-nome').trim().toUpperCase()||DB[fcTab][i].nome),cirurgia:gv('ee-cirurgia').trim().toUpperCase(),convenio:gv('ee-convenio').toUpperCase(),valor:parseFloat(gv('ee-valor'))||null,status:gv('ee-status'),deadline:gv('ee-deadline'),sabao:gv('ee-sabao'),exames:gv('ee-exames'),orient:gv('ee-orient'),anest:gv('ee-anest'),cardio:gv('ee-cardio'),bactroban:gv('ee-bactroban'),plano:gv('ee-plano').trim(),lembrete:gv('ee-lembrete').trim(),stars:se?parseInt(se.value)||0:0,tab:fcTab});
   var ant=DB[fcTab][i];p.inicio_status=gv('ee-inicio')||((ant.status||'')!==(p.status||'')?today():(ant.inicio_status||''));
