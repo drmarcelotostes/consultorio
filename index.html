@@ -251,7 +251,8 @@ async function fcLoad(){
     if(res.error)throw new Error(res.error);
     var na=[],nf=[],no=[];
     (res.rows||[]).forEach(function(r){
-      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas',data_cirurgia:normData(r.data_cirurgia)||'',anotacoes:r.anotacoes||'',ultimo_contato:normData(r.ultimo_contato)||''};
+      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas',data_cirurgia:normData(r.data_cirurgia)||'',anotacoes:r.anotacoes||'',ultimo_contato:normData(r.ultimo_contato)||'',inicio_status:normData(r.inicio_status)||''};
+      if(!p.inicio_status&&typeof poGet==='function')p.inicio_status=poGet(p).inicio_status||'';
       if(!p.data_cirurgia&&typeof poGet==='function')p.data_cirurgia=poGet(p).data_cirurgia||'';
       p.tab=fcTabPorStatus(p.status,p.tab);
       if(p.tab==='operados')no.push(p);else if(p.tab==='futuras')nf.push(p);else na.push(p);
@@ -311,6 +312,7 @@ var FC_CSS='<style>'
 +'.fc-pend-old{color:#e05252;font-weight:600}'
 +'.fc-pend-mid{color:#e8b84b;font-weight:600}'
 +'.fc-pend-ok{color:#81BBA1}'
++'.fc-pend-dt{background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:6px;padding:3px 6px;font-size:12px;font-family:\'DM Sans\',sans-serif;color-scheme:dark}'
 +'.fc-pend-btn{background:rgba(73,103,80,.2);border:1px solid #5B9776;color:#81BBA1;border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer;font-family:DM Sans,sans-serif;white-space:nowrap}'
 +'.fc-pend-x{margin-left:auto;background:none;border:1px solid #2a3347;color:#8b94a8;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}'
 +'@media(max-width:760px){.fc-pend-tb .hm{display:none}}'
@@ -483,7 +485,8 @@ function fcEditBody(p,i){
   +'<div class="efg egf"><label>Cirurgia</label><input id="ee-cirurgia-'+i+'" type="text" value="'+esc(p.cirurgia)+'" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()"></div>'
   +'<div class="efg"><label>Convênio</label>'+convHtml+'</div>'
   +'<div class="efg"><label>Valor (R$)</label><input id="ee-valor-'+i+'" type="number" value="'+(p.valor||'')+'" onclick="event.stopPropagation()" onkeydown="event.stopPropagation()"></div>'
-  +'<div class="efg"><label>Status</label><select id="ee-status-'+i+'" onclick="event.stopPropagation()">'+selOpts(SEL_ST,p.status)+'</select></div>'
+  +'<div class="efg"><label>Status</label><select id="ee-status-'+i+'" onclick="event.stopPropagation()" onchange="fcEditStatusChg('+i+')">'+selOpts(SEL_ST,p.status)+'</select></div>'
+  +'<div class="efg"><label id="ee-inicio-lbl-'+i+'">'+fcInicioLbl(p.status)+'</label><input id="ee-inicio-'+i+'" type="date" value="'+esc(fcInicioStatus(p))+'" onclick="event.stopPropagation()" title="A contagem de dias recomeça a partir desta data"></div>'
   +'<div class="efg"><label>Prazo Limite</label><input id="ee-deadline-'+i+'" type="date" value="'+esc(p.deadline||'')+'" onclick="event.stopPropagation()"></div>'
   +'<div class="efg egf"><label>Prioridade</label><div style="display:flex;gap:6px;align-items:center;margin-top:4px">'+fcStarsEdit(i,s)+'<input type="hidden" id="ee-stars-'+i+'" value="'+s+'"></div></div>'
   +'</div></div>'
@@ -532,7 +535,7 @@ function fcRender(){
     return'<div class="fcard'+(isOpen?' open':'')+(isEdit?' editing':'')+cdl+'" id="fc-card-'+i+'">'
     +'<div class="fhdr" onclick="fcToggle('+i+')">'
     +'<div class="stars-col" onclick="event.stopPropagation()">'+fcStars(i,p.stars||0)+'</div>'
-    +'<div><div class="pname">'+esc(p.nome)+dp+(fcTab==='operados'?fcPoChip(p):'')+'</div><div class="surg">'+esc(p.cirurgia)+'</div>'+(p.lembrete?'<div class="lmb-inline">⚠ '+esc(p.lembrete)+'</div>':'')+'</div>'
+    +'<div><div class="pname">'+esc(p.nome)+dp+(fcTab==='operados'?fcPoChip(p):fcStatusChip(p))+'</div><div class="surg">'+esc(p.cirurgia)+'</div>'+(p.lembrete?'<div class="lmb-inline">⚠ '+esc(p.lembrete)+'</div>':'')+'</div>'
     +'<span class="bdg '+sCls(p.status)+'"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span>'
     +'<span class="cvt">'+esc(p.convenio||'—')+'</span>'
     +'<span class="vlt">'+fmtR(p.valor)+'</span>'
@@ -571,9 +574,17 @@ function fcOpLimpar(){['fc-op-sort','fc-op-tempo','fc-op-de','fc-op-ate'].forEac
 // ── Pendências de autorização (aba Ativas): Em autorização + Ainda não solicitado, da mais antiga à mais recente ──
 function fcEntrada(p){var m=/(\d{13})/.exec(p.id||'');if(!m)return'';return dIso(new Date(parseInt(m[1])));}
 function fcDiasDesde(d){if(!d)return null;return Math.round((new Date(today()+'T12:00:00')-new Date(d+'T12:00:00'))/864e5);}
+// Início do status atual (ex.: data em que começou o processo de autorização). Sem data gravada → data de entrada na fila.
+function fcInicioStatus(p){return p.inicio_status||poGet(p).inicio_status||fcEntrada(p)||'';}
+function fcInicioLbl(st){var c=sCls(st);if(c==='em-autorizacao')return'Início da autorização';if(c==='nao-solicitado')return'Aguardando desde';if(c==='autorizado')return'Autorizado em';return'Início do status';}
+// Cores: Em autorização → amarelo após 7 dias, vermelho após 15; demais → amarelo após 21, vermelho após 60
+function fcInicioCls(p,dd){if(dd===null)return'';if(sCls(p.status)==='em-autorizacao')return dd>15?'fc-pend-old':dd>7?'fc-pend-mid':'fc-pend-ok';return dd>60?'fc-pend-old':dd>21?'fc-pend-mid':'fc-pend-ok';}
+function fcStatusChip(p){var c=sCls(p.status);if(c!=='em-autorizacao'&&c!=='nao-solicitado'&&c!=='autorizado')return'';var dd=fcDiasDesde(fcInicioStatus(p));if(dd===null)return'';var col={'fc-pend-old':'#e05252','fc-pend-mid':'#e8b84b','fc-pend-ok':'#81BBA1','':'#8b94a8'}[fcInicioCls(p,dd)];var t=c==='em-autorizacao'?'em autoriz.':c==='autorizado'?'autorizado':'aguardando';return'<span class="dp" title="'+fcInicioLbl(p.status)+': '+fcFmtD(fcInicioStatus(p))+'" style="margin-left:6px;color:'+col+';border:1px solid '+col+'55">⏱ '+dd+'d '+t+'</span>';}
+async function fcPendSetInicio(i,v){var p=DB.ativas[i];if(!p)return;p.inicio_status=v||today();poSetCampo(p,'inicio_status',p.inicio_status);fcPendDraw();fcRender();await fcSave(p);}
+function fcEditStatusChg(i){var d=document.getElementById('ee-inicio-'+i),s=document.getElementById('ee-status-'+i),l=document.getElementById('ee-inicio-lbl-'+i);if(d)d.value=today();if(l&&s)l.textContent=fcInicioLbl(s.value);}
 function fcPendLista(){
   return DB.ativas.filter(function(p){var c=sCls(p.status);return c==='em-autorizacao'||c==='nao-solicitado';})
-    .map(function(p){return{p:p,ent:fcEntrada(p)};})
+    .map(function(p){return{p:p,ent:fcInicioStatus(p),fila:fcEntrada(p)};})
     .sort(function(a,b){if(!a.ent&&!b.ent)return 0;if(!a.ent)return 1;if(!b.ent)return -1;return a.ent<b.ent?-1:a.ent>b.ent?1:0;});
 }
 function fcFmtD(d){return d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'—';}
@@ -583,15 +594,15 @@ function fcPendDraw(){
   var L=fcPendLista(),box=document.getElementById('fc-pend-box');if(!box)return;
   var nEm=L.filter(function(x){return sCls(x.p.status)==='em-autorizacao';}).length,nNs=L.length-nEm;
   var h='<div class="fc-pend-hd"><h3>📋 Pendências de autorização</h3><span class="bdg em-autorizacao"><span class="bdg-dot"></span>Em autorização: '+nEm+'</span><span class="bdg nao-solicitado"><span class="bdg-dot"></span>Não solicitado: '+nNs+'</span><button class="fc-pend-x" onclick="fcPendClose()">✕ Fechar</button></div>';
-  h+='<div class="fc-pend-sub">Pacientes da aba Ativas ainda sem autorização, do mais antigo ao mais recente (data de entrada na fila). Use semanalmente para atualizar a situação com o convênio/seguro ou lembrar o paciente. "Contato hoje" registra a data do último contato na planilha.</div>';
+  h+='<div class="fc-pend-sub">Pacientes da aba Ativas ainda sem autorização, do mais antigo ao mais recente. A contagem de dias recomeça quando o status muda (ex.: ao passar para Em autorização); a data de início pode ser ajustada direto na tabela. Use semanalmente para atualizar a situação com o convênio/seguro ou lembrar o paciente. "Contato hoje" registra a data do último contato na planilha.</div>';
   if(!L.length){box.innerHTML=h+'<div class="fc-empty">Nenhum paciente aguardando autorização. 🎉</div>';return;}
-  h+='<table class="fc-pend-tb"><thead><tr><th>#</th><th>Entrada na fila</th><th>Paciente</th><th class="hm">Convênio</th><th>Status</th><th>Último contato</th><th class="hm">Lembrete</th><th></th></tr></thead><tbody>';
+  h+='<table class="fc-pend-tb"><thead><tr><th>#</th><th>Início do status</th><th>Paciente</th><th class="hm">Convênio</th><th>Status</th><th>Último contato</th><th class="hm">Lembrete</th><th></th></tr></thead><tbody>';
   L.forEach(function(x,k){
     var p=x.p,i=DB.ativas.indexOf(p),dd=fcDiasDesde(x.ent),uc=p.ultimo_contato||'',ud=fcDiasDesde(uc);
-    var cls=dd===null?'':dd>60?'fc-pend-old':dd>21?'fc-pend-mid':'fc-pend-ok';
+    var cls=fcInicioCls(p,dd);
     var ucls=ud===null?'fc-pend-old':ud>7?'fc-pend-mid':'fc-pend-ok';
     h+='<tr><td style="color:#8b94a8">'+(k+1)+'</td>'
-      +'<td><div>'+fcFmtD(x.ent)+'</div><div class="'+cls+'" style="font-size:11px">'+(dd===null?'sem data':dd===0?'hoje':'há '+dd+' dia'+(dd===1?'':'s'))+'</div></td>'
+      +'<td><input type="date" class="fc-pend-dt" value="'+esc(x.ent)+'" title="'+fcInicioLbl(p.status)+'" onchange="fcPendSetInicio('+i+',this.value)"><div class="'+cls+'" style="font-size:11px">'+(dd===null?'sem data':dd===0?'hoje':'há '+dd+' dia'+(dd===1?'':'s'))+'</div>'+(x.fila&&x.fila!==x.ent?'<div style="font-size:10px;color:#8b94a8">na fila desde '+fcFmtD(x.fila)+'</div>':'')+'</td>'
       +'<td><div style="font-weight:600">'+esc(p.nome)+'</div><div style="font-size:11px;color:#8b94a8">'+esc(p.cirurgia||'—')+'</div></td>'
       +'<td class="hm">'+esc(p.convenio||'—')+'</td>'
       +'<td><span class="bdg '+sCls(p.status)+'" style="font-size:10px"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span></td>'
@@ -619,6 +630,8 @@ async function fcSaveEdit(i){
   function gv(id){var el=document.getElementById(id+'-'+i);return el?el.value:'';}
   var se=document.getElementById('ee-stars-'+i);
   var p=Object.assign({},DB[fcTab][i],{nome:(gv('ee-nome').trim().toUpperCase()||DB[fcTab][i].nome),cirurgia:gv('ee-cirurgia').trim().toUpperCase(),convenio:gv('ee-convenio').toUpperCase(),valor:parseFloat(gv('ee-valor'))||null,status:gv('ee-status'),deadline:gv('ee-deadline'),sabao:gv('ee-sabao'),exames:gv('ee-exames'),orient:gv('ee-orient'),anest:gv('ee-anest'),cardio:gv('ee-cardio'),bactroban:gv('ee-bactroban'),plano:gv('ee-plano').trim(),lembrete:gv('ee-lembrete').trim(),stars:se?parseInt(se.value)||0:0,tab:fcTab});
+  var ant=DB[fcTab][i];p.inicio_status=gv('ee-inicio')||((ant.status||'')!==(p.status||'')?today():(ant.inicio_status||''));
+  if(p.inicio_status!==(ant.inicio_status||'')&&p.id)poSetCampo(p,'inicio_status',p.inicio_status);
   var dest=fcTabPorStatus(p.status,fcTab);p.tab=dest;
   if(dest==='operados'&&!poDataCir(p)){p.data_cirurgia=today();poSetCampo(p,'data_cirurgia',p.data_cirurgia);}
   if(dest!==fcTab){
