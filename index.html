@@ -35,6 +35,9 @@ body{background:#0e1117;color:#e8edf5;font-family:'DM Sans',sans-serif;font-size
 .lcard:hover{border-color:#5B9776;transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.5)}
 .lcard-icon{font-size:36px;margin-bottom:14px;display:block}
 .lcard h2{font-size:15px;font-weight:600;margin-bottom:6px}
+.lcard.pz-alert{border-color:#e05252;animation:pzCard 1s ease-in-out infinite}
+.lcard .pz-lc{display:block;margin-top:8px;font-size:11px;font-weight:700;color:#fff;background:#e05252;border-radius:10px;padding:3px 8px}
+@keyframes pzCard{0%,100%{box-shadow:0 0 0 0 rgba(224,82,82,.0);background:#161b25}50%{box-shadow:0 0 18px 4px rgba(224,82,82,.55);background:#2a1719}}
 .lcard p{font-size:12px;color:#8b94a8;line-height:1.5}
 .lcard .go{display:inline-block;margin-top:16px;padding:7px 18px;border-radius:8px;font-size:12px;font-weight:600;background:#496750;color:#DBE7DC}
 .sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#81BBA1;background:rgba(73,103,80,.2);border:1px solid rgba(91,151,118,.3);border-radius:20px;padding:3px 10px;margin-top:10px}
@@ -79,7 +82,7 @@ body{background:#0e1117;color:#e8edf5;font-family:'DM Sans',sans-serif;font-size
     <div class="sync-badge"><span class="sync-dot"></span> Sincronizado com Google Sheets</div>
   </div>
   <div class="launch-cards">
-    <div class="lcard" onclick="openApp('fila')"><span class="lcard-icon">🏥</span><h2>Fila Cirúrgica</h2><p>Gestão de pacientes, checklist pré-op, prazos e lembretes</p><span class="go">Acessar →</span></div>
+    <div class="lcard" id="lcard-fila" onclick="openApp('fila')"><span class="lcard-icon">🏥</span><h2>Fila Cirúrgica</h2><p>Gestão de pacientes, checklist pré-op, prazos e lembretes</p><span class="go">Acessar →</span></div>
     <div class="lcard" onclick="openApp('calc')"><span class="lcard-icon">💰</span><h2>Calculadora de Honorários</h2><p>Honorários com impostos, anestesia, equipe e export PDF</p><span class="go">Acessar →</span></div>
     <div class="lcard" onclick="openApp('atend')"><span class="lcard-icon">📋</span><h2>Atendimentos do Dia</h2><p>Registro de consultas, procedimentos e resumo financeiro</p><span class="go">Acessar →</span></div>
     <div class="lcard" onclick="openApp('contab')"><span class="lcard-icon">📊</span><h2>Contabilidade do Mês</h2><p>Consolidação mensal, projeções, gráficos e relatório PDF</p><span class="go">Acessar →</span></div>
@@ -262,7 +265,7 @@ async function fcLoad(){
     var lf=DB.futuras.filter(function(p){return!p.id||idsS.indexOf(p.id)<0;});
     var lo=DB.operados.filter(function(p){return!p.id||idsS.indexOf(p.id)<0;});
     DB.ativas=na.concat(la);DB.futuras=nf.concat(lf);DB.operados=no.concat(lo);
-    fcRender();toast('✅ Fila sincronizada!');
+    fcRender();toast('✅ Fila sincronizada!');pzPull();
   }catch(e){toast('Erro: '+e.message,true);}
   syncOff('fc-sync-icon');
 }
@@ -402,10 +405,49 @@ var FC_CSS='<style>'
 +'.urg-row.critical{background:rgba(240,136,62,.07);border-left:3px solid #f0883e}'
 +'.urg-row.warning{background:rgba(232,184,75,.06);border-left:3px solid #e8b84b}'
 +'.fc-empty{text-align:center;padding:50px;color:#8b94a8}'
++'.fc-tab.pz-alert{color:#e05252;animation:pzTab 1s ease-in-out infinite}'
++'@keyframes pzTab{0%,100%{background:transparent}50%{background:rgba(224,82,82,.28)}}'
++'@keyframes pzBlink{0%,100%{background:rgba(224,82,82,.30);border-left-color:#ff5c5c}50%{background:rgba(224,82,82,.04);border-left-color:#7a2a2a}}'
++'.pz-venc-blink{animation:pzBlink 1s ease-in-out infinite}'
++'.fc-reat{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px dashed #f0883e;border-radius:9px;background:rgba(240,136,62,.07);font-size:13px;color:#f0883e}'
++'.fc-reat select{background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:6px 9px;font-size:12px;font-family:DM Sans,sans-serif}'
++'.pz-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;flex-wrap:wrap}'
++'.pz-h{font-size:14px;font-weight:600;color:#e8edf5}'
++'.pz-hs{font-size:11px;color:#8b94a8;margin-top:3px}'
++'.pz-box{background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden}'
++'.pz-sec{padding:12px 18px 6px;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8b94a8;font-weight:600}'
++'.pz-row{display:grid;grid-template-columns:2fr 1.2fr auto;gap:12px;padding:11px 18px;border-bottom:1px solid rgba(42,51,71,.6);align-items:center;border-left:3px solid transparent}'
++'.pz-row.pz-venc{border-left-color:#e05252;animation:pzBlink 1s ease-in-out infinite}'
++'.pz-row.pz-venc .pz-rest{color:#ff6b6b;font-weight:700}'
++'.pz-row.pz-hoje{border-left-color:#f0883e;background:rgba(240,136,62,.06)}'
++'.pz-row.pz-hoje .pz-rest{color:#f0883e}'
++'.pz-row.pz-prox .pz-rest{color:#81BBA1}'
++'.pz-row.pz-feito{opacity:.55}'
++'.pz-link{color:#81BBA1;font-weight:600;font-size:13px;cursor:pointer;text-decoration:none}'
++'.pz-link:hover{text-decoration:underline}'
++'.pz-nome{font-weight:600;font-size:13px}'
++'.pz-tit{font-size:13px;color:#e8edf5;margin-top:2px}'
++'.pz-sub{display:block;font-size:11px;color:#8b94a8;margin-top:2px}'
++'.pz-obs{font-size:11px;color:#b5bdcc;margin-top:3px;font-style:italic}'
++'.pz-when{font-size:12px;color:#c9d1e0}'
++'.pz-rest{font-size:11px;margin-top:2px;font-family:DM Mono,monospace}'
++'.pz-acts{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}'
++'.pz-b{background:#1e2535;border:1px solid #2a3347;color:#c9d1e0;border-radius:7px;padding:5px 9px;font-size:11px;cursor:pointer;font-family:DM Sans,sans-serif}'
++'.pz-b:hover{border-color:#81BBA1}'
++'.pz-b.ok{border-color:#496750;color:#81BBA1}'
++'.pz-form{background:#161b25;border:1px solid #81BBA1;border-radius:12px;padding:14px 18px;margin-bottom:14px}'
++'.pz-form-t{font-size:13px;font-weight:600;color:#81BBA1;margin-bottom:10px}'
++'.pz-fg{display:grid;grid-template-columns:1.4fr 1.6fr .8fr .6fr;gap:10px}'
++'.pz-fg .pz-full{grid-column:1/-1}'
++'.pz-fg input,.pz-fg textarea{width:100%;background:#0e1520;border:1px solid #2a3347;color:#e8edf5;border-radius:7px;padding:7px 10px;font-size:13px;font-family:DM Sans,sans-serif;outline:none;box-sizing:border-box}'
++'.pz-fg input[type=date],.pz-fg input[type=time]{color-scheme:dark}'
++'.pz-feitos-t{margin:14px 0 8px;font-size:12px;color:#8b94a8;cursor:pointer;user-select:none}'
++'.fcard.pz-destaque{box-shadow:0 0 0 2px #81BBA1,0 0 18px rgba(129,187,161,.5);transition:box-shadow .3s}'
++'@media(max-width:760px){.pz-row{grid-template-columns:1fr}.pz-acts{justify-content:flex-start}.pz-fg{grid-template-columns:1fr 1fr}}'
 +'</style>';
 
 function fcGetPrazos(){return[].concat(DB.ativas,DB.futuras).filter(function(p){return p.deadline;}).map(function(p){return{p:p,days:daysTo(p.deadline)};}).filter(function(x){return x.days!==null;}).sort(function(a,b){return a.days-b.days;});}
-function fcBadges(){var items=fcGetPrazos(),exp=items.filter(function(x){return x.days<0;}).length,soon=items.filter(function(x){return x.days>=0&&x.days<=7;}).length;var el=document.getElementById('fct-prazos');if(!el)return;el.querySelectorAll('.ab').forEach(function(e){e.remove();});if(exp>0)el.insertAdjacentHTML('beforeend','<span class="ab">'+exp+'</span>');else if(soon>0)el.insertAdjacentHTML('beforeend','<span class="ab warn">'+soon+'</span>');}
+function fcBadges(){var items=fcGetPrazos(),exp=items.filter(function(x){return x.days<0;}).length+pzVencidos().length,soon=items.filter(function(x){return x.days>=0&&x.days<=7;}).length+pzProximos24h().length;var el=document.getElementById('fct-prazos');if(!el)return;el.querySelectorAll('.ab').forEach(function(e){e.remove();});el.classList.toggle('pz-alert',pzVencidos().length>0);if(exp>0)el.insertAdjacentHTML('beforeend','<span class="ab">'+exp+'</span>');else if(soon>0)el.insertAdjacentHTML('beforeend','<span class="ab warn">'+soon+'</span>');}
 function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','futuras','operados','prazos'].forEach(function(id){var el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});var c=document.getElementById('fc-ctrl');if(c)c.style.display=t==='prazos'?'none':'flex';fcCtrlVis();fcRender();}
 function fcStars(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcSetStar(event,'+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
 function fcSetStar(e,i,n){e.stopPropagation();var c=DB[fcTab][i].stars||0;DB[fcTab][i].stars=c===n?0:n;fcSave(DB[fcTab][i]);fcRender();}
@@ -474,7 +516,7 @@ function fcViewBody(p,i){
   var lb=p.lembrete?'<div class="lmb vgf">⚠️ '+esc(p.lembrete)+'</div>':'';
   var ck=checks.map(function(c){var ic=fci(c.v);return'<div class="ck-row"><div class="cki '+ic.c+'">'+ic.i+'</div><span>'+c.l+'</span><span class="cv2">'+esc(c.v||'—')+'</span></div>';}).join('');
   var pl=p.plano?'<div class="plb vgf"><span class="plbl">Plano Cirúrgico</span>'+esc(p.plano)+'</div>':'';
-  return'<div class="vb">'+(fcTab==='operados'?fcPoHTML(p,i):'')+'<div class="vg">'+pb+lb+'<div><div class="stl">Checklist</div><div class="ck-list">'+ck+'</div></div><div><div class="stl">Detalhes</div><div class="ck-list"><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>'+esc(p.convenio||'—')+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">'+fmtR(p.valor)+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>'+sLbl(p.status)+'</span></div></div></div>'+pl+'</div><div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn-sv" onclick="fcStartEdit('+i+');event.stopPropagation()">✏️ Editar</button></div></div>';
+  return'<div class="vb">'+(fcTab==='operados'?fcPoHTML(p,i):'')+'<div class="vg">'+pb+lb+'<div><div class="stl">Checklist</div><div class="ck-list">'+ck+'</div></div><div><div class="stl">Detalhes</div><div class="ck-list"><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>'+esc(p.convenio||'—')+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">'+fmtR(p.valor)+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>'+sLbl(p.status)+'</span></div></div></div>'+pl+'</div>'+fcReatHTML(p,i)+'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn-gh" onclick="fcPzNovoDe('+i+');event.stopPropagation()">⏰ Criar prazo</button><button class="btn-sv" onclick="fcStartEdit('+i+');event.stopPropagation()">✏️ Editar</button></div></div>';
 }
 
 function fcStarsEdit(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star-edit" id="estr-'+i+'-'+n+'" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcEditStar('+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
@@ -671,13 +713,156 @@ async function fcDupJuntar(){if(!fcDupAtual)return;var A=fcDupAtual.a.p,B=fcDupA
   catch(e){toast('Erro ao juntar: '+e.message+' — sincronize e tente de novo',true);}
   fcDupClose();fcRender();if(fcDupGrupos().length)fcDupOpen(gi);}
 
-function fcRenderPrazos(){
-  var items=fcGetPrazos();
-  function sec(tit,list,icon){if(!list.length)return'';return'<div style="padding:12px 18px 0"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8b94a8;font-weight:600;margin-bottom:8px">'+icon+' '+tit+'</div></div>'+list.map(function(x){var p=x.p,days=x.days;return'<div class="urg-row '+dlCls(days)+'"><div><div style="font-size:13px;font-weight:500">'+esc(p.nome)+'</div><div style="font-size:11px;color:#8b94a8">'+esc(p.cirurgia)+'</div></div><span class="dp '+dlCls(days)+'">'+dlLbl(days)+'</span><span style="font-size:11px;color:#8b94a8">'+esc(p.convenio||'—')+'</span><span class="bdg '+sCls(p.status)+'" style="font-size:10px"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span><span style="font-size:11px;color:#8b94a8">'+p.deadline+'</span></div>';}).join('');}
-  var html=sec('VENCIDAS',items.filter(function(x){return x.days<0;}),'🚨')+sec('PRÓXIMOS 7 DIAS',items.filter(function(x){return x.days>=0&&x.days<=7;}),'⚠️')+sec('PRÓXIMAS SEMANAS',items.filter(function(x){return x.days>7;}),'📅');
-  if(!items.length)html='<div class="fc-empty">Nenhum prazo cadastrado.</div>';
-  document.getElementById('fc-grid').innerHTML='<div style="background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden">'+html+'</div>';
+// ── PACIENTE INDECISO → volta para Ativas ──
+var FC_REAT_ST=['AINDA NÃO SOLICITADO','EM AUTORIZAÇÃO','AUTORIZADO','NÃO NECESSITA'];
+function fcReatHTML(p,i){
+  if(fcTab!=='futuras'||sCls(p.status)!=='indeciso')return'';
+  return'<div class="fc-reat" onclick="event.stopPropagation()"><span>🔄 Paciente voltou a querer operar?</span>'
+  +'<select id="fc-reat-st-'+i+'">'+FC_REAT_ST.map(function(o){return'<option value="'+o+'">'+o+'</option>';}).join('')+'</select>'
+  +'<button class="btn-sv" onclick="fcReativar('+i+');event.stopPropagation()">↩️ Voltar para Ativas</button></div>';
 }
+async function fcReativar(i){
+  var ant=DB.futuras[i];if(!ant)return;
+  var sel=document.getElementById('fc-reat-st-'+i),st=sel?sel.value:'AINDA NÃO SOLICITADO';
+  var p=Object.assign({},ant,{status:st,tab:'ativas',inicio_status:today()});
+  if(p.id)poSetCampo(p,'inicio_status',p.inicio_status);
+  DB.futuras.splice(i,1);DB.ativas.unshift(p);fcOpen.clear();fcEdit.clear();fcRender();
+  await fcSave(p);toast('↩️ '+p.nome+' voltou para Ativas ('+sLbl(st)+')');
+}
+
+// ── PRAZOS COM DATA E HORA (piscam quando vencem) ──
+// Ficam guardados neste navegador e, se a planilha tiver a aba "prazos", também lá.
+var PZ_KEY='fc_prazos_v1',pzForm=null,pzAvisados={},pzMostrarFeitos=false;
+function pzAll(){try{var d=localStorage.getItem(PZ_KEY);return d?JSON.parse(d):[];}catch(e){return[];}}
+function pzSetAll(L){try{localStorage.setItem(PZ_KEY,JSON.stringify(L));}catch(e){}}
+function pzQuando(z){if(!z.data)return null;var t=new Date(z.data+'T'+(z.hora||'23:59')+':00');return isNaN(t)?null:t;}
+function pzFeito(z){return z.feito===true||z.feito==='true'||z.feito==='TRUE';}
+function pzVencidos(){var n=Date.now();return pzVisiveis().filter(function(z){var q=pzQuando(z);return!pzFeito(z)&&q&&q.getTime()<=n;});}
+function pzProximos24h(){var n=Date.now();return pzVisiveis().filter(function(z){var q=pzQuando(z);return!pzFeito(z)&&q&&q.getTime()>n&&q.getTime()-n<=864e5;});}
+function pzFmtQuando(z){var q=pzQuando(z);if(!q)return'—';return q.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'})+' às '+(z.hora||'23:59');}
+function pzFmtDur(ms){var m=Math.floor(Math.abs(ms)/6e4),d=Math.floor(m/1440),h=Math.floor((m%1440)/60),mi=m%60;if(d>0)return d+'d '+h+'h';if(h>0)return h+'h '+mi+'min';return mi+' min';}
+function pzRestante(z){var q=pzQuando(z);if(!q)return'';var ms=q.getTime()-Date.now();return ms<=0?'⚠ VENCIDO há '+pzFmtDur(ms):'⏳ vence em '+pzFmtDur(ms);}
+function pzAcharPaciente(z){
+  var L=fcTodos();
+  if(z.pac_id){var a=L.filter(function(x){return x.p.id&&x.p.id===z.pac_id;})[0];if(a)return a;}
+  var k=fcNomeKey(z.pac_nome);if(!k)return null;
+  return L.filter(function(x){return fcNomeKey(x.p.nome)===k;})[0]||null;
+}
+function pzGravar(z){
+  z.atualizado=new Date().toISOString();
+  var L=pzAll(),ix=-1;L.forEach(function(x,k){if(x.id===z.id)ix=k;});
+  if(ix>=0)L[ix]=z;else L.push(z);pzSetAll(L);
+  try{apiSave('prazos',z).catch(function(){});}catch(e){}
+}
+async function pzPull(){
+  try{
+    var res=await apiGet('prazos');if(!res||res.error||!res.rows)return;
+    var L=pzAll(),map={};L.forEach(function(z){map[z.id]=z;});
+    res.rows.forEach(function(r){
+      if(!r||!r.id)return;
+      var z={id:String(r.id),titulo:r.titulo||'',pac_nome:r.pac_nome||'',pac_id:r.pac_id||'',data:normData(r.data)||'',hora:pzHora(r.hora),obs:r.obs||'',feito:pzFeito(r),feito_em:r.feito_em||'',criado:r.criado||'',atualizado:r.atualizado||'',excluido:r.excluido===true||r.excluido==='true'||r.excluido==='TRUE'};
+      var l=map[z.id];if(!l||(z.atualizado&&(!l.atualizado||z.atualizado>l.atualizado)))map[z.id]=z;
+    });
+    pzSetAll(Object.keys(map).map(function(k){return map[k];}));
+    fcBadges();pzTick();if(fcTab==='prazos'&&!pzForm)fcRenderPrazos();
+  }catch(e){}
+}
+function pzHora(v){if(!v)return'';var s=String(v),m=s.match(/(\d{1,2}):(\d{2})/);return m?String(m[1]).padStart(2,'0')+':'+m[2]:'';}
+function pzVisiveis(){return pzAll().filter(function(z){return!z.excluido;});}
+
+function pzNovo(pac){
+  var t=new Date(Date.now()+36e5);t.setMinutes(0,0,0);
+  pzForm={id:'',titulo:'',pac_nome:pac||'',data:dIso(t),hora:String(t.getHours()).padStart(2,'0')+':00',obs:''};
+}
+function fcPzNovoDe(i){var p=DB[fcTab][i];if(!p)return;pzNovo(p.nome);pzForm.pac_id=p.id||'';fcSetTab('prazos');}
+function pzAbrirForm(){pzNovo('');fcRenderPrazos();setTimeout(function(){var e=document.getElementById('pz-f-pac');if(e)e.focus();},30);}
+function pzEditar(id){var z=pzAll().filter(function(x){return x.id===id;})[0];if(!z)return;pzForm=Object.assign({},z);fcRenderPrazos();}
+function pzCancelar(){pzForm=null;fcRenderPrazos();}
+function pzSalvarForm(){
+  function gv(k){var e=document.getElementById('pz-f-'+k);return e?e.value.trim():'';}
+  var pac=gv('pac'),tit=gv('tit'),data=gv('data'),hora=gv('hora');
+  if(!pac&&!tit){toast('Informe o paciente ou o que precisa ser feito',true);return;}
+  if(!data){toast('Informe a data do prazo',true);return;}
+  var z=Object.assign({},pzForm,{pac_nome:pac.toUpperCase(),titulo:tit,data:data,hora:hora||'23:59',obs:gv('obs')});
+  var ach=pzAcharPaciente({pac_nome:z.pac_nome,pac_id:(pzForm.pac_nome||'').toUpperCase()===z.pac_nome?pzForm.pac_id:''});
+  z.pac_id=ach&&ach.p.id?ach.p.id:'';
+  if(!z.id){z.id='pz'+Date.now();z.criado=new Date().toISOString();z.feito=false;}
+  else{var q=pzQuando(z);if(q&&q.getTime()>Date.now())delete pzAvisados[z.id];}
+  pzGravar(z);pzForm=null;fcRenderPrazos();toast('⏰ Prazo salvo');setTimeout(pzTick,50);
+}
+function pzConcluir(id){var z=pzAll().filter(function(x){return x.id===id;})[0];if(!z)return;z.feito=!pzFeito(z);z.feito_em=z.feito?new Date().toISOString():'';pzGravar(z);fcBadges();pzTick();fcRenderPrazos();toast(z.feito?'✅ Prazo concluído':'↩️ Prazo reaberto');}
+function pzAdiar(id,min){var z=pzAll().filter(function(x){return x.id===id;})[0];if(!z)return;var base=pzQuando(z),agora=new Date();if(!base||base<agora)base=agora;var t=new Date(base.getTime()+min*6e4);z.data=dIso(t);z.hora=String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0');delete pzAvisados[id];pzGravar(z);fcBadges();pzTick();fcRenderPrazos();toast('⏰ Adiado para '+pzFmtQuando(z));}
+function pzExcluir(id){if(!confirm('Excluir este prazo?'))return;var z=pzAll().filter(function(x){return x.id===id;})[0];if(!z)return;z.excluido=true;pzGravar(z);fcBadges();pzTick();fcRenderPrazos();toast('🗑️ Prazo excluído');}
+function pzAbrirFicha(id){
+  var z=pzAll().filter(function(x){return x.id===id;})[0];if(!z)return;
+  var a=pzAcharPaciente(z);if(!a){toast('Paciente não encontrado na fila',true);return;}
+  fcSetTab(a.t);var i=DB[a.t].indexOf(a.p);if(i<0)return;
+  var bs=document.getElementById('fc-search');if(bs&&bs.value){bs.value='';}
+  fcOpen.add(i);fcRender();
+  setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('pz-destaque');setTimeout(function(){el.classList.remove('pz-destaque');},2500);}},60);
+}
+function pzToggleFeitos(){pzMostrarFeitos=!pzMostrarFeitos;fcRenderPrazos();}
+
+function pzFormHTML(){
+  var z=pzForm,nomes={};fcTodos().forEach(function(x){if(x.p.nome&&x.p.nome!=='NOVO PACIENTE')nomes[x.p.nome]=1;});
+  return'<div class="pz-form"><div class="pz-form-t">'+(z.id?'✏️ Editar prazo':'＋ Novo prazo')+'</div><div class="pz-fg">'
+  +'<div class="efg"><label>Paciente (ficha da fila ou nome livre)</label><input id="pz-f-pac" list="pz-dl-pac" type="text" value="'+esc(z.pac_nome)+'" placeholder="Digite para buscar na fila..."><datalist id="pz-dl-pac">'+Object.keys(nomes).sort().map(function(n){return'<option value="'+esc(n)+'">';}).join('')+'</datalist></div>'
+  +'<div class="efg"><label>O que precisa ser feito</label><input id="pz-f-tit" type="text" value="'+esc(z.titulo)+'" placeholder="Ex.: ligar para a seguradora, cobrar exames..."></div>'
+  +'<div class="efg"><label>Data</label><input id="pz-f-data" type="date" value="'+esc(z.data)+'"></div>'
+  +'<div class="efg"><label>Horário</label><input id="pz-f-hora" type="time" value="'+esc(z.hora)+'"></div>'
+  +'<div class="efg pz-full"><label>Observação</label><textarea id="pz-f-obs" style="min-height:48px">'+esc(z.obs||'')+'</textarea></div>'
+  +'</div><div class="ef"><button class="btn-gh" onclick="pzCancelar()">Cancelar</button><button class="btn-sv" onclick="pzSalvarForm()">💾 Salvar prazo</button></div></div>';
+}
+function pzRowHTML(z,cls){
+  var ach=pzAcharPaciente(z),feito=pzFeito(z);
+  var nome=z.pac_nome?(ach?'<a class="pz-link" onclick="pzAbrirFicha(\''+z.id+'\')" title="Abrir ficha do paciente">📂 '+esc(z.pac_nome)+'</a>':'<span class="pz-nome">'+esc(z.pac_nome)+'</span>'):'';
+  var info=ach?'<span class="pz-sub">'+esc(ach.p.cirurgia||'')+(ach.p.status?' · '+sLbl(ach.p.status):'')+'</span>':'';
+  var acoes=feito
+    ?'<button class="pz-b" onclick="pzConcluir(\''+z.id+'\')">↩️ Reabrir</button><button class="pz-b" onclick="pzExcluir(\''+z.id+'\')">🗑️</button>'
+    :'<button class="pz-b ok" onclick="pzConcluir(\''+z.id+'\')">✅ Concluir</button><button class="pz-b" onclick="pzAdiar(\''+z.id+'\',60)">+1h</button><button class="pz-b" onclick="pzAdiar(\''+z.id+'\',1440)">+1 dia</button><button class="pz-b" onclick="pzEditar(\''+z.id+'\')">✏️</button><button class="pz-b" onclick="pzExcluir(\''+z.id+'\')">🗑️</button>';
+  return'<div class="pz-row '+cls+'"><div class="pz-main">'+nome+(z.titulo?'<div class="pz-tit">'+esc(z.titulo)+'</div>':'')+info+(z.obs?'<div class="pz-obs">'+esc(z.obs)+'</div>':'')+'</div>'
+  +'<div class="pz-when"><div>'+pzFmtQuando(z)+'</div><div class="pz-rest" data-pz="'+z.id+'">'+(feito?'✅ concluído':pzRestante(z))+'</div></div>'
+  +'<div class="pz-acts">'+acoes+'</div></div>';
+}
+function fcRenderPrazos(){
+  var agora=Date.now(),L=pzVisiveis(),ab=[],fe=[];
+  L.forEach(function(z){(pzFeito(z)?fe:ab).push(z);});
+  ab.sort(function(a,b){return(pzQuando(a)||0)-(pzQuando(b)||0);});
+  fe.sort(function(a,b){return(b.feito_em||'').localeCompare(a.feito_em||'');});
+  var fimHoje=new Date();fimHoje.setHours(23,59,59,999);
+  var venc=ab.filter(function(z){var q=pzQuando(z);return q&&q.getTime()<=agora;});
+  var hoje=ab.filter(function(z){var q=pzQuando(z);return q&&q.getTime()>agora&&q<=fimHoje;});
+  var prox=ab.filter(function(z){var q=pzQuando(z);return!q||q>fimHoje;});
+  function sec(t,list,cls){if(!list.length)return'';return'<div class="pz-sec">'+t+' <span>('+list.length+')</span></div>'+list.map(function(z){return pzRowHTML(z,cls);}).join('');}
+  var h='<div class="pz-top"><div><div class="pz-h">⏰ Prazos com data e horário</div><div class="pz-hs">Quando o horário chega, o prazo pisca em vermelho aqui, na aba Prazos e no card da Fila Cirúrgica.</div></div>'+(pzForm?'':'<button class="fc-btn-new" onclick="pzAbrirForm()">＋ Novo prazo</button>')+'</div>';
+  if(pzForm)h+=pzFormHTML();
+  var corpo=sec('🚨 VENCIDOS',venc,'pz-venc')+sec('⏳ HOJE',hoje,'pz-hoje')+sec('📅 PRÓXIMOS',prox,'pz-prox');
+  if(!corpo)corpo='<div class="fc-empty" style="padding:30px">Nenhum prazo em aberto. Clique em <strong>＋ Novo prazo</strong> ou use o botão <strong>⏰ Criar prazo</strong> dentro da ficha do paciente.</div>';
+  h+='<div class="pz-box">'+corpo+'</div>';
+  if(fe.length)h+='<div class="pz-feitos-t" onclick="pzToggleFeitos()">'+(pzMostrarFeitos?'▾':'▸')+' Concluídos ('+fe.length+')</div>'+(pzMostrarFeitos?'<div class="pz-box">'+fe.slice(0,30).map(function(z){return pzRowHTML(z,'pz-feito');}).join('')+'</div>':'');
+  // Prazo limite cadastrado na ficha de cada paciente (como antes)
+  var items=fcGetPrazos();
+  function secP(tit,list,icon){if(!list.length)return'';return'<div style="padding:12px 18px 0"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#8b94a8;font-weight:600;margin-bottom:8px">'+icon+' '+tit+'</div></div>'+list.map(function(x){var p=x.p,days=x.days;return'<div class="urg-row '+dlCls(days)+(days<0?' pz-venc-blink':'')+'"><div><div style="font-size:13px;font-weight:500">'+esc(p.nome)+'</div><div style="font-size:11px;color:#8b94a8">'+esc(p.cirurgia)+'</div></div><span class="dp '+dlCls(days)+'">'+dlLbl(days)+'</span><span style="font-size:11px;color:#8b94a8">'+esc(p.convenio||'—')+'</span><span class="bdg '+sCls(p.status)+'" style="font-size:10px"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span><span style="font-size:11px;color:#8b94a8">'+p.deadline+'</span></div>';}).join('');}
+  var hp=secP('VENCIDAS',items.filter(function(x){return x.days<0;}),'🚨')+secP('PRÓXIMOS 7 DIAS',items.filter(function(x){return x.days>=0&&x.days<=7;}),'⚠️')+secP('PRÓXIMAS SEMANAS',items.filter(function(x){return x.days>7;}),'📅');
+  h+='<div class="pz-h" style="margin:22px 0 8px">📋 Prazo limite das fichas</div>'+(hp?'<div style="background:#161b25;border:1px solid #2a3347;border-radius:12px;overflow:hidden">'+hp+'</div>':'<div class="fc-empty" style="padding:20px">Nenhuma ficha com prazo limite.</div>');
+  document.getElementById('fc-grid').innerHTML=h;
+}
+// Verifica os prazos a cada 20 s: pisca aba/card, atualiza contagem e avisa quando um vence
+var PZ_TITULO=document.title;
+function pzTick(){
+  var v=pzVencidos();
+  fcBadges();
+  var lc=document.getElementById('lcard-fila');
+  if(lc){lc.classList.toggle('pz-alert',v.length>0);var s=lc.querySelector('.pz-lc');if(v.length){if(!s){s=document.createElement('span');s.className='pz-lc';lc.appendChild(s);}s.textContent='⏰ '+v.length+' prazo'+(v.length>1?'s':'')+' vencido'+(v.length>1?'s':'');}else if(s)s.remove();}
+  document.title=v.length?'(⏰ '+v.length+') '+PZ_TITULO:PZ_TITULO;
+  v.forEach(function(z){if(!pzAvisados[z.id]){pzAvisados[z.id]=1;toast('⏰ Prazo vencido: '+(z.pac_nome||'')+(z.titulo?' — '+z.titulo:''),true);}});
+  if(fcTab==='prazos'&&!pzForm){var fa=document.getElementById('app-fila');if(fa&&fa.classList.contains('active')){
+    var precisa=false;pzVisiveis().forEach(function(z){var el=document.querySelector('.pz-rest[data-pz="'+z.id+'"]');if(!el||pzFeito(z))return;var row=el.closest('.pz-row');var venc=(pzQuando(z)||0)<=Date.now();if(venc&&!row.classList.contains('pz-venc'))precisa=true;el.textContent=pzRestante(z);});
+    if(precisa)fcRenderPrazos();
+  }}
+}
+setInterval(pzTick,20000);
+setTimeout(pzTick,500);
 function fcToggle(i){fcOpen.has(i)?fcOpen.delete(i):fcOpen.add(i);fcRender();}
 function fcStartEdit(i){fcEdit.add(i);fcOpen.add(i);fcRender();setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
 function fcCancelEdit(i){fcEdit.delete(i);fcRender();}
@@ -693,7 +878,10 @@ async function fcSaveEdit(i){
   var p=Object.assign({},DB[fcTab][i],{nome:(gv('ee-nome').trim().toUpperCase()||DB[fcTab][i].nome),cirurgia:gv('ee-cirurgia').trim().toUpperCase(),convenio:gv('ee-convenio').toUpperCase(),valor:parseFloat(gv('ee-valor'))||null,status:gv('ee-status'),deadline:gv('ee-deadline'),sabao:gv('ee-sabao'),exames:gv('ee-exames'),orient:gv('ee-orient'),anest:gv('ee-anest'),cardio:gv('ee-cardio'),bactroban:gv('ee-bactroban'),plano:gv('ee-plano').trim(),lembrete:gv('ee-lembrete').trim(),stars:se?parseInt(se.value)||0:0,tab:fcTab});
   var ant=DB[fcTab][i];p.inicio_status=gv('ee-inicio')||((ant.status||'')!==(p.status||'')?today():(ant.inicio_status||''));
   if(p.inicio_status!==(ant.inicio_status||'')&&p.id)poSetCampo(p,'inicio_status',p.inicio_status);
-  var dest=fcTabPorStatus(p.status,fcTab);p.tab=dest;
+  var dest=fcTabPorStatus(p.status,fcTab);
+  // Paciente indeciso (Futuras) que decidiu operar: ao trocar para outro status volta para Ativas
+  if(fcTab==='futuras'&&dest==='futuras'&&sCls(ant.status)==='indeciso'&&sCls(p.status)!=='indeciso')dest='ativas';
+  p.tab=dest;
   if(dest==='operados'&&!poDataCir(p)){p.data_cirurgia=today();poSetCampo(p,'data_cirurgia',p.data_cirurgia);}
   if(dest!==fcTab){
     DB[fcTab].splice(i,1);DB[dest].unshift(p);fcOpen.clear();fcEdit.clear();fcRender();
@@ -1409,7 +1597,7 @@ setInterval(function(){
   atHojeRef=h;
 },60000);
 // Aviso de nova versão do sistema (evita usar versão antiga deixada aberta)
-var APP_VER='2026-10-23a';
+var APP_VER='2026-11-12a';
 setInterval(async function(){try{var t=await fetch(location.pathname+'?cb='+Date.now(),{cache:'no-store'}).then(function(r){return r.text();});var m=t.match(/var APP_VER='([^']+)'/);if(m&&m[1]!==APP_VER&&!document.getElementById('upd-bar')){var b=document.createElement('div');b.id='upd-bar';b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:99999;background:#e8b84b;color:#111;text-align:center;padding:10px;font-weight:700;font-family:DM Sans,sans-serif;cursor:pointer';b.textContent='🔄 Há uma nova versão do sistema — clique aqui para atualizar';b.onclick=function(){location.reload();};document.body.appendChild(b);}}catch(e){}},10*60*1000);
 function atBanner(){
   return atAvisoData()+atBannerBase();
