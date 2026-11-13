@@ -203,13 +203,13 @@ var TODAY=new Date();TODAY.setHours(0,0,0,0);
 function daysTo(ds){if(!ds)return null;return Math.round((new Date(ds+'T00:00:00')-TODAY)/864e5);}
 function dlCls(d){if(d===null)return'none';if(d<0)return'expired';if(d<=2)return'critical';if(d<=7)return'warning';return'safe';}
 function dlLbl(d){if(d===null)return null;if(d<0)return'⚠ VENCIDA há '+Math.abs(d)+'d';if(d===0)return'🚨 HOJE';if(d===1)return'🔴 AMANHÃ';return'📅 '+d+'d';}
-function sCls(s){s=(s||'').toUpperCase();if(s==='OPERADO')return'operado';if(s.indexOf('INDECISO')>=0)return'indeciso';if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'em-autorizacao';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'nao-solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'nao-necessita';return'vazio';}
-function sLbl(s){s=(s||'').toUpperCase();if(s==='OPERADO')return'Operado';if(s.indexOf('INDECISO')>=0)return'Indeciso';if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'Autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'Em Autorização';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'Não Solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'Não Necessita';return s||'—';}
+function sCls(s){s=(s||'').toUpperCase();if(s==='OPERADO')return'operado';if(s.indexOf('COTA')>=0&&s.indexOf('OPME')>=0)return'cotacao-opme';if(s.indexOf('INDECISO')>=0)return'indeciso';if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'em-autorizacao';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'nao-solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'nao-necessita';return'vazio';}
+function sLbl(s){s=(s||'').toUpperCase();if(s==='OPERADO')return'Operado';if(s.indexOf('COTA')>=0&&s.indexOf('OPME')>=0)return'Em Cotação de OPME';if(s.indexOf('INDECISO')>=0)return'Indeciso';if(s.indexOf('AUTORIZADO')>=0&&s.indexOf('AINDA')<0)return'Autorizado';if(s.indexOf('EM AUTORIZA')>=0)return'Em Autorização';if(s.indexOf('AINDA')>=0||s.indexOf('AGUARDA')>=0)return'Não Solicitado';if(s.indexOf('NÃO NECESSITA')>=0)return'Não Necessita';return s||'—';}
 function isOk(v){return['ENTREGUE','ORIENTADO','PEDIDO ENTREGUE','PACIENTE JÁ FEZ'].indexOf((v||'').toUpperCase())>=0;}
 function isNA(v){return(v||'').toUpperCase()==='NÃO SE APLICA';}
 function fci(v){if(isNA(v))return{c:'warn',i:'—'};if(isOk(v))return{c:'ok',i:'✓'};return{c:'fail',i:'✗'};}
 function scoreP(p){var it=[p.sabao,p.exames,p.orient,p.anest,p.cardio,p.bactroban];var ap=it.filter(function(v){return!isNA(v);});return{done:ap.filter(isOk).length,total:ap.length};}
-var SEL_ST=['AUTORIZADO','EM AUTORIZAÇÃO','AINDA NÃO SOLICITADO','NÃO NECESSITA','PACIENTE INDECISO','OPERADO',''];
+var SEL_ST=['AUTORIZADO','EM AUTORIZAÇÃO','EM COTAÇÃO DE OPME','AINDA NÃO SOLICITADO','NÃO NECESSITA','PACIENTE INDECISO','OPERADO',''];
 var SEL_CK=['ENTREGUE','PEDIDO ENTREGUE','PACIENTE JÁ FEZ','ORIENTADO','NÃO ENTREGUE','NÃO ORIENTADO','FALTA ENTREGAR','FALTA SOLICITAR','SOLICITADO','NÃO SE APLICA','VAZIO'];
 var CONV_OPTS=['PARTICULAR','BRADESCO','UNIMED RIBEIRAO','UNIMED NACIONAL','UNIMED SEGUROS','SULAMERICA','AMIL','PORTO SEGURO','NOTREDAME','OUTRO'];
 var CONV_LBL={'PARTICULAR':'Particular','BRADESCO':'Bradesco','UNIMED RIBEIRAO':'Unimed Ribeirão','UNIMED NACIONAL':'Unimed Nacional','UNIMED SEGUROS':'Unimed Seguros','SULAMERICA':'SulAmérica','AMIL':'Amil','PORTO SEGURO':'Porto Seguro','NOTREDAME':'Notre Dame','OUTRO':'Outro'};
@@ -254,8 +254,9 @@ async function fcLoad(){
     if(res.error)throw new Error(res.error);
     var na=[],nf=[],no=[];
     (res.rows||[]).forEach(function(r){
-      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas',data_cirurgia:normData(r.data_cirurgia)||'',anotacoes:r.anotacoes||'',ultimo_contato:normData(r.ultimo_contato)||'',inicio_status:normData(r.inicio_status)||''};
+      var p={id:r.id,nome:r.nome||'',cirurgia:r.cirurgia||'',status:r.status||'',convenio:r.convenio||'',valor:r.valor?parseFloat(r.valor):null,deadline:r.deadline||'',lembrete:r.lembrete||'',sabao:r.sabao||'NÃO ENTREGUE',exames:r.exames||'NÃO ENTREGUE',orient:r.orient||'FALTA ENTREGAR',anest:r.anest||'NÃO ENTREGUE',cardio:r.cardio||'NÃO SE APLICA',bactroban:r.bactroban||'NÃO SE APLICA',plano:r.plano||'',stars:parseInt(r.stars)||0,tab:r.tab||'ativas',data_cirurgia:normData(r.data_cirurgia)||'',anotacoes:r.anotacoes||'',ultimo_contato:normData(r.ultimo_contato)||'',inicio_status:normData(r.inicio_status)||'',hist_status:r.hist_status||''};
       if(!p.inicio_status&&typeof poGet==='function')p.inicio_status=poGet(p).inicio_status||'';
+      if(!p.hist_status&&typeof poGet==='function')p.hist_status=poGet(p).hist_status||'';
       if(!p.data_cirurgia&&typeof poGet==='function')p.data_cirurgia=poGet(p).data_cirurgia||'';
       p.tab=fcTabPorStatus(p.status,p.tab);
       if(p.tab==='operados')no.push(p);else if(p.tab==='futuras')nf.push(p);else na.push(p);
@@ -278,7 +279,7 @@ function initFila(){
   fcInited=true;
   document.getElementById('fc-body').innerHTML=FC_CSS
   +'<div class="fc-tabs"><button class="fc-tab active" id="fct-ativas" onclick="fcSetTab(\'ativas\')">Ativas</button><button class="fc-tab" id="fct-futuras" onclick="fcSetTab(\'futuras\')">Futuras</button><button class="fc-tab" id="fct-operados" onclick="fcSetTab(\'operados\')">✅ Operados</button><button class="fc-tab" id="fct-prazos" onclick="fcSetTab(\'prazos\')">⏰ Prazos</button></div>'
-  +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option><option>PACIENTE INDECISO</option><option>OPERADO</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-pend" id="fc-btn-pend" onclick="fcPendOpen()">📋 Pendências de autorização</button><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
+  +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>EM COTAÇÃO DE OPME</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option><option>PACIENTE INDECISO</option><option>OPERADO</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-pend" id="fc-btn-pend" onclick="fcPendOpen()">📋 Pendências de autorização</button><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
   +'<div class="fc-ctrl fc-op-ctrl" id="fc-op-ctrl" style="display:none"><span class="fc-op-lbl">Ordenar</span><select id="fc-op-sort" onchange="fcRender()"><option value="">Padrão (alertas e estrelas)</option><option value="data_desc">Data da cirurgia — mais recente primeiro</option><option value="data_asc">Data da cirurgia — mais antiga primeiro</option><option value="nome_asc">Nome — A → Z</option><option value="nome_desc">Nome — Z → A</option></select><span class="fc-op-lbl">Tempo de cirurgia</span><select id="fc-op-tempo" onchange="fcRender()"><option value="">Todos</option><option value="0-30">Até 30 dias</option><option value="31-90">31 a 90 dias (1–3 meses)</option><option value="91-180">91 a 180 dias (3–6 meses)</option><option value="181-365">181 a 365 dias (6–12 meses)</option><option value="366-">Mais de 1 ano</option><option value="sem">Sem data de cirurgia</option></select><span class="fc-op-lbl">Data de</span><input type="date" id="fc-op-de" onchange="fcRender()"><span class="fc-op-lbl">até</span><input type="date" id="fc-op-ate" onchange="fcRender()"><button class="fc-op-clear" onclick="fcOpLimpar()">Limpar filtros</button><span class="fc-op-count" id="fc-op-count"></span></div>'
   +'<div id="fc-pend-modal" class="fc-pend-modal" style="display:none" onclick="if(event.target===this)fcPendClose()"><div class="fc-pend-box" id="fc-pend-box"></div></div>'
   +'<div id="fc-dup-modal" class="fc-pend-modal" style="display:none" onclick="if(event.target===this)fcDupClose()"><div class="fc-pend-box" id="fc-dup-box" style="max-width:900px"></div></div>'
@@ -354,6 +355,14 @@ var FC_CSS='<style>'
 +'.bdg.operado .bdg-dot{background:#DBE7DC}'
 +'.bdg.indeciso{background:rgba(240,136,62,.1);border-color:#f0883e;color:#f0883e}'
 +'.bdg.indeciso .bdg-dot{background:#f0883e}'
++'.bdg.cotacao-opme{background:rgba(78,201,214,.1);border-color:#4ec9d6;color:#4ec9d6}'
++'.bdg.cotacao-opme .bdg-dot{background:#4ec9d6}'
++'.bdg-dias{margin-left:5px;padding-left:5px;border-left:1px solid currentColor;font-family:DM Mono,monospace;font-weight:700}'
++'.fc-hist{margin-top:12px;border:1px solid #2a3347;border-radius:9px;overflow:hidden}'
++'.fc-hist table{width:100%;border-collapse:collapse;font-size:12px}'
++'.fc-hist th{text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#8b94a8;font-weight:600;padding:7px 10px;background:#1a2030}'
++'.fc-hist td{padding:7px 10px;border-top:1px solid #222a3b;color:#c9d1e0}'
++'.fc-hist tr.atual td{background:rgba(129,187,161,.06)}'
 +'.cvt{font-size:11px;padding:3px 7px;border-radius:5px;background:#1e2535;color:#8b94a8;border:1px solid #2a3347;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px}'
 +'.vlt{font-family:DM Mono,monospace;font-size:12px;color:#81BBA1}'
 +'.pp{font-size:10px;padding:2px 7px;border-radius:10px;font-family:DM Mono,monospace}'
@@ -516,7 +525,7 @@ function fcViewBody(p,i){
   var lb=p.lembrete?'<div class="lmb vgf">⚠️ '+esc(p.lembrete)+'</div>':'';
   var ck=checks.map(function(c){var ic=fci(c.v);return'<div class="ck-row"><div class="cki '+ic.c+'">'+ic.i+'</div><span>'+c.l+'</span><span class="cv2">'+esc(c.v||'—')+'</span></div>';}).join('');
   var pl=p.plano?'<div class="plb vgf"><span class="plbl">Plano Cirúrgico</span>'+esc(p.plano)+'</div>':'';
-  return'<div class="vb">'+(fcTab==='operados'?fcPoHTML(p,i):'')+'<div class="vg">'+pb+lb+'<div><div class="stl">Checklist</div><div class="ck-list">'+ck+'</div></div><div><div class="stl">Detalhes</div><div class="ck-list"><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>'+esc(p.convenio||'—')+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">'+fmtR(p.valor)+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>'+sLbl(p.status)+'</span></div></div></div>'+pl+'</div>'+fcReatHTML(p,i)+'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn-gh" onclick="fcPzNovoDe('+i+');event.stopPropagation()">⏰ Criar prazo</button><button class="btn-sv" onclick="fcStartEdit('+i+');event.stopPropagation()">✏️ Editar</button></div></div>';
+  return'<div class="vb">'+(fcTab==='operados'?fcPoHTML(p,i):'')+'<div class="vg">'+pb+lb+'<div><div class="stl">Checklist</div><div class="ck-list">'+ck+'</div></div><div><div class="stl">Detalhes</div><div class="ck-list"><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Convênio</span><span>'+esc(p.convenio||'—')+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Valor</span><span class="vlt">'+fmtR(p.valor)+'</span></div><div class="ck-row"><span style="color:#8b94a8;min-width:68px;font-size:11px">Status</span><span>'+sLbl(p.status)+'</span></div></div></div>'+pl+'</div><div class="stl" style="margin-top:14px">Histórico de status</div>'+(fcHistHTML(p)||'<div style="font-size:12px;color:#8b94a8">Sem alterações registradas.</div>')+fcReatHTML(p,i)+'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn-gh" onclick="fcPzNovoDe('+i+');event.stopPropagation()">⏰ Criar prazo</button><button class="btn-sv" onclick="fcStartEdit('+i+');event.stopPropagation()">✏️ Editar</button></div></div>';
 }
 
 function fcStarsEdit(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star-edit" id="estr-'+i+'-'+n+'" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcEditStar('+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
@@ -585,7 +594,7 @@ function fcRender(){
     +'<div class="fhdr" onclick="fcToggle('+i+')">'
     +'<div class="stars-col" onclick="event.stopPropagation()">'+fcStars(i,p.stars||0)+'</div>'
     +'<div><div class="pname">'+esc(p.nome)+dp+(fcTab==='operados'?fcPoChip(p):fcStatusChip(p))+'</div><div class="surg">'+esc(p.cirurgia)+'</div>'+(p.lembrete?'<div class="lmb-inline">⚠ '+esc(p.lembrete)+'</div>':'')+'</div>'
-    +'<span class="bdg '+sCls(p.status)+'"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span>'
+    +fcBadge(p)
     +'<span class="cvt">'+esc(p.convenio||'—')+'</span>'
     +'<span class="vlt">'+fmtR(p.valor)+'</span>'
     +'<span class="pp '+(sc2.done===sc2.total?'ok':'fail')+'">'+sc2.done+'/'+sc2.total+'</span>'
@@ -625,14 +634,34 @@ function fcEntrada(p){var m=/(\d{13})/.exec(p.id||'');if(!m)return'';return dIso
 function fcDiasDesde(d){if(!d)return null;return Math.round((new Date(today()+'T12:00:00')-new Date(d+'T12:00:00'))/864e5);}
 // Início do status atual (ex.: data em que começou o processo de autorização). Sem data gravada → data de entrada na fila.
 function fcInicioStatus(p){return p.inicio_status||poGet(p).inicio_status||fcEntrada(p)||'';}
-function fcInicioLbl(st){var c=sCls(st);if(c==='em-autorizacao')return'Início da autorização';if(c==='nao-solicitado')return'Aguardando desde';if(c==='autorizado')return'Autorizado em';return'Início do status';}
+function fcInicioLbl(st){var c=sCls(st);if(c==='em-autorizacao')return'Início da autorização';if(c==='cotacao-opme')return'Início da cotação de OPME';if(c==='nao-solicitado')return'Aguardando desde';if(c==='autorizado')return'Autorizado em';return'Início do status';}
 // Cores: Em autorização → amarelo após 7 dias, vermelho após 15; demais → amarelo após 21, vermelho após 60
-function fcInicioCls(p,dd){if(dd===null)return'';if(sCls(p.status)==='em-autorizacao')return dd>15?'fc-pend-old':dd>7?'fc-pend-mid':'fc-pend-ok';return dd>60?'fc-pend-old':dd>21?'fc-pend-mid':'fc-pend-ok';}
-function fcStatusChip(p){var c=sCls(p.status);if(c!=='em-autorizacao'&&c!=='nao-solicitado'&&c!=='autorizado')return'';var dd=fcDiasDesde(fcInicioStatus(p));if(dd===null)return'';var col={'fc-pend-old':'#e05252','fc-pend-mid':'#e8b84b','fc-pend-ok':'#81BBA1','':'#8b94a8'}[fcInicioCls(p,dd)];var t=c==='em-autorizacao'?'em autoriz.':c==='autorizado'?'autorizado':'aguardando';return'<span class="dp" title="'+fcInicioLbl(p.status)+': '+fcFmtD(fcInicioStatus(p))+'" style="margin-left:6px;color:'+col+';border:1px solid '+col+'55">⏱ '+dd+'d '+t+'</span>';}
+function fcInicioCls(p,dd){if(dd===null)return'';var c0=sCls(p.status);if(c0==='em-autorizacao'||c0==='cotacao-opme')return dd>15?'fc-pend-old':dd>7?'fc-pend-mid':'fc-pend-ok';return dd>60?'fc-pend-old':dd>21?'fc-pend-mid':'fc-pend-ok';}
+function fcStatusChip(p){return'';}
+// Dias no status atual, exibidos dentro do selo de status (recalculado a cada renderização → atualiza todo dia)
+function fcDiasStatus(p){var c=sCls(p.status);if(c==='operado'||c==='vazio')return null;return fcDiasDesde(fcInicioStatus(p));}
+function fcBadge(p,extra){var c=sCls(p.status),dd=fcDiasStatus(p),d='';if(dd!==null&&dd>=0){var col={'fc-pend-old':'#e05252','fc-pend-mid':'#e8b84b','fc-pend-ok':'inherit','':'inherit'}[fcInicioCls(p,dd)];d='<span class="bdg-dias" style="color:'+col+'" title="'+fcInicioLbl(p.status)+': '+fcFmtD(fcInicioStatus(p))+'">'+dd+'d</span>';}return'<span class="bdg '+c+'"'+(extra||'')+'><span class="bdg-dot"></span>'+sLbl(p.status)+d+'</span>';}
+// ── HISTÓRICO DE STATUS ── cada item: {status, inicio, fim}; o status atual não entra na lista (é p.status + p.inicio_status)
+function fcHist(p){var h=p.hist_status;if(typeof h==='string'){try{h=h?JSON.parse(h):[];}catch(e){h=[];}}return Array.isArray(h)?h:[];}
+function fcHistRegistrar(ant,p){
+  if(!ant||(ant.status||'')===(p.status||''))return;
+  var h=fcHist(ant).slice();
+  if(ant.status){var ini=fcInicioStatus(ant),fim=p.inicio_status||today();h.push({status:ant.status,inicio:ini,fim:fim});}
+  p.hist_status=JSON.stringify(h);
+  poSetCampo(p,'hist_status',p.hist_status);
+}
+function fcDiasEntre(a,b){if(!a||!b)return null;return Math.max(0,Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5));}
+function fcHistHTML(p){
+  var h=fcHist(p);
+  var rows=h.map(function(x){var d=fcDiasEntre(x.inicio,x.fim);return'<tr><td><span class="bdg '+sCls(x.status)+'" style="font-size:10px"><span class="bdg-dot"></span>'+sLbl(x.status)+'</span></td><td>'+fcFmtD(x.inicio)+'</td><td>'+fcFmtD(x.fim)+'</td><td style="font-family:DM Mono,monospace">'+(d===null?'—':d+' dia'+(d===1?'':'s'))+'</td></tr>';}).reverse();
+  if(p.status){var di=fcDiasDesde(fcInicioStatus(p));rows.unshift('<tr class="atual"><td><span class="bdg '+sCls(p.status)+'" style="font-size:10px"><span class="bdg-dot"></span>'+sLbl(p.status)+'</span></td><td>'+fcFmtD(fcInicioStatus(p))+'</td><td style="color:#81BBA1">atual</td><td style="font-family:DM Mono,monospace">'+(di===null?'—':di+' dia'+(di===1?'':'s'))+'</td></tr>');}
+  if(!rows.length)return'';
+  return'<div class="fc-hist" onclick="event.stopPropagation()"><table><thead><tr><th>Status</th><th>Início</th><th>Término</th><th>Dias</th></tr></thead><tbody>'+rows.join('')+'</tbody></table></div>';
+}
 async function fcPendSetInicio(i,v){var p=DB.ativas[i];if(!p)return;p.inicio_status=v||today();poSetCampo(p,'inicio_status',p.inicio_status);fcPendDraw();fcRender();await fcSave(p);}
 function fcEditStatusChg(i){var d=document.getElementById('ee-inicio-'+i),s=document.getElementById('ee-status-'+i),l=document.getElementById('ee-inicio-lbl-'+i);if(d)d.value=today();if(l&&s)l.textContent=fcInicioLbl(s.value);}
 function fcPendLista(){
-  return DB.ativas.filter(function(p){var c=sCls(p.status);return c==='em-autorizacao'||c==='nao-solicitado';})
+  return DB.ativas.filter(function(p){var c=sCls(p.status);return c==='em-autorizacao'||c==='cotacao-opme'||c==='nao-solicitado';})
     .map(function(p){return{p:p,ent:fcInicioStatus(p),fila:fcEntrada(p)};})
     .sort(function(a,b){if(!a.ent&&!b.ent)return 0;if(!a.ent)return 1;if(!b.ent)return -1;return a.ent<b.ent?-1:a.ent>b.ent?1:0;});
 }
@@ -641,8 +670,8 @@ function fcPendOpen(){fcPendDraw();document.getElementById('fc-pend-modal').styl
 function fcPendClose(){document.getElementById('fc-pend-modal').style.display='none';}
 function fcPendDraw(){
   var L=fcPendLista(),box=document.getElementById('fc-pend-box');if(!box)return;
-  var nEm=L.filter(function(x){return sCls(x.p.status)==='em-autorizacao';}).length,nNs=L.length-nEm;
-  var h='<div class="fc-pend-hd"><h3>📋 Pendências de autorização</h3><span class="bdg em-autorizacao"><span class="bdg-dot"></span>Em autorização: '+nEm+'</span><span class="bdg nao-solicitado"><span class="bdg-dot"></span>Não solicitado: '+nNs+'</span><button class="fc-pend-x" onclick="fcPendClose()">✕ Fechar</button></div>';
+  var nEm=L.filter(function(x){return sCls(x.p.status)==='em-autorizacao';}).length,nOp=L.filter(function(x){return sCls(x.p.status)==='cotacao-opme';}).length,nNs=L.length-nEm-nOp;
+  var h='<div class="fc-pend-hd"><h3>📋 Pendências de autorização</h3><span class="bdg em-autorizacao"><span class="bdg-dot"></span>Em autorização: '+nEm+'</span><span class="bdg cotacao-opme"><span class="bdg-dot"></span>Cotação OPME: '+nOp+'</span><span class="bdg nao-solicitado"><span class="bdg-dot"></span>Não solicitado: '+nNs+'</span><button class="fc-pend-x" onclick="fcPendClose()">✕ Fechar</button></div>';
   h+='<div class="fc-pend-sub">Pacientes da aba Ativas ainda sem autorização, do mais antigo ao mais recente. A contagem de dias recomeça quando o status muda (ex.: ao passar para Em autorização); a data de início pode ser ajustada direto na tabela. Use semanalmente para atualizar a situação com o convênio/seguro ou lembrar o paciente. "Contato hoje" registra a data do último contato na planilha.</div>';
   if(!L.length){box.innerHTML=h+'<div class="fc-empty">Nenhum paciente aguardando autorização. 🎉</div>';return;}
   h+='<table class="fc-pend-tb"><thead><tr><th>#</th><th>Início do status</th><th>Paciente</th><th class="hm">Convênio</th><th>Status</th><th>Último contato</th><th class="hm">Lembrete</th><th></th></tr></thead><tbody>';
@@ -714,7 +743,7 @@ async function fcDupJuntar(){if(!fcDupAtual)return;var A=fcDupAtual.a.p,B=fcDupA
   fcDupClose();fcRender();if(fcDupGrupos().length)fcDupOpen(gi);}
 
 // ── PACIENTE INDECISO → volta para Ativas ──
-var FC_REAT_ST=['AINDA NÃO SOLICITADO','EM AUTORIZAÇÃO','AUTORIZADO','NÃO NECESSITA'];
+var FC_REAT_ST=['AINDA NÃO SOLICITADO','EM AUTORIZAÇÃO','EM COTAÇÃO DE OPME','AUTORIZADO','NÃO NECESSITA'];
 function fcReatHTML(p,i){
   if(fcTab!=='futuras'||sCls(p.status)!=='indeciso')return'';
   return'<div class="fc-reat" onclick="event.stopPropagation()"><span>🔄 Paciente voltou a querer operar?</span>'
@@ -726,6 +755,7 @@ async function fcReativar(i){
   var sel=document.getElementById('fc-reat-st-'+i),st=sel?sel.value:'AINDA NÃO SOLICITADO';
   var p=Object.assign({},ant,{status:st,tab:'ativas',inicio_status:today()});
   if(p.id)poSetCampo(p,'inicio_status',p.inicio_status);
+  fcHistRegistrar(ant,p);
   DB.futuras.splice(i,1);DB.ativas.unshift(p);fcOpen.clear();fcEdit.clear();fcRender();
   await fcSave(p);toast('↩️ '+p.nome+' voltou para Ativas ('+sLbl(st)+')');
 }
@@ -877,7 +907,9 @@ async function fcSaveEdit(i){
   var se=document.getElementById('ee-stars-'+i);
   var p=Object.assign({},DB[fcTab][i],{nome:(gv('ee-nome').trim().toUpperCase()||DB[fcTab][i].nome),cirurgia:gv('ee-cirurgia').trim().toUpperCase(),convenio:gv('ee-convenio').toUpperCase(),valor:parseFloat(gv('ee-valor'))||null,status:gv('ee-status'),deadline:gv('ee-deadline'),sabao:gv('ee-sabao'),exames:gv('ee-exames'),orient:gv('ee-orient'),anest:gv('ee-anest'),cardio:gv('ee-cardio'),bactroban:gv('ee-bactroban'),plano:gv('ee-plano').trim(),lembrete:gv('ee-lembrete').trim(),stars:se?parseInt(se.value)||0:0,tab:fcTab});
   var ant=DB[fcTab][i];p.inicio_status=gv('ee-inicio')||((ant.status||'')!==(p.status||'')?today():(ant.inicio_status||''));
+  if((ant.status||'')!==(p.status||'')&&gv('ee-inicio')===fcInicioStatus(ant))p.inicio_status=today();
   if(p.inicio_status!==(ant.inicio_status||'')&&p.id)poSetCampo(p,'inicio_status',p.inicio_status);
+  fcHistRegistrar(ant,p);
   var dest=fcTabPorStatus(p.status,fcTab);
   // Paciente indeciso (Futuras) que decidiu operar: ao trocar para outro status volta para Ativas
   if(fcTab==='futuras'&&dest==='futuras'&&sCls(ant.status)==='indeciso'&&sCls(p.status)!=='indeciso')dest='ativas';
