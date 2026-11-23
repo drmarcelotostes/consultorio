@@ -380,6 +380,7 @@ var FC_CSS='<style>'
 +'.ag-p:hover{background:rgba(73,103,80,.4)}'
 +'.ag-p small{display:block;color:#8b94a8;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
 +'.ag-p.op{border-left-color:#5b8def;background:rgba(91,141,239,.15)}'
++'.ag-p.pre{border-left-style:dashed}'
 +'.ag-p.fut{border-left-color:#8b94a8;background:rgba(139,148,168,.12)}'
 +'@media(max-width:700px){.ag-grid{height:auto;grid-auto-rows:minmax(90px,auto)}.ag-p{font-size:10px}.ag-p small{display:none}.ag-hd h3{font-size:16px;min-width:0}}'
 +'.bdg-dias{margin-left:5px;padding-left:5px;border-left:1px solid currentColor;font-family:DM Mono,monospace;font-weight:700}'
@@ -638,12 +639,20 @@ function agBase(){if(!agMes){var d=new Date();agMes=new Date(d.getFullYear(),d.g
 function agNav(n){var b=agBase();if(n===0){var d=new Date();agMes=new Date(d.getFullYear(),d.getMonth(),1,12);}else agMes=new Date(b.getFullYear(),b.getMonth()+n,1,12);fcRenderAgenda();}
 function agAbrir(t,id){var i=-1;DB[t].forEach(function(p,k){if((p.id||'')===id&&i<0)i=k;});if(i<0)return;fcSetTab(t);fcOpen.clear();fcEdit.clear();fcOpen.add(i);fcRender();setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},60);}
 function agFerNome(iso){var md=iso.slice(5),N={'01-01':'Confraternização','04-21':'Tiradentes','05-01':'Dia do Trabalho','09-07':'Independência','10-12':'N. Sra. Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal'};return N[md]||'Sexta-feira Santa';}
+// Data de agendamento escrita no lembrete/anotações (ex.: "PRÉ-AGENDADO PARA 03/12", "CIRURGIA PRÉ-AGENDADA PARA 04/03/2027", "OPERADO EM 10/11/26")
+function agDataTexto(p){
+  var txt=((p.lembrete||'')+' \n '+(p.anotacoes||'')).toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  var re=/(AGEND|OPERAD)[^\n]{0,40}?(\d{1,2})[\/\.-](\d{1,2})(?:[\/\.-](\d{2,4}))?/,m=re.exec(txt);if(!m)return null;
+  var d=+m[2],mo=+m[3],y=m[4]?+m[4]:null;if(y!==null&&y<100)y+=2000;if(d<1||d>31||mo<1||mo>12)return null;
+  if(y===null){var h=new Date(),y0=h.getFullYear(),c=new Date(y0,mo-1,d,12);y=(m[1]==='AGEND'&&(h-c)/864e5>60)?y0+1:y0;}
+  return{data:y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0'),pre:m[1]==='AGEND'};
+}
 function fcRenderAgenda(){
   var g=document.getElementById('fc-grid');if(!g)return;
   var sc=document.getElementById('fc-stats');if(sc)sc.innerHTML='';
   var b=agBase(),y=b.getFullYear(),m=b.getMonth();
   var map={};
-  ['ativas','futuras','operados'].forEach(function(t){DB[t].forEach(function(p){var d=poDataCir(p);if(!d)return;(map[d]=map[d]||[]).push({p:p,t:t});});});
+  ['ativas','futuras','operados'].forEach(function(t){DB[t].forEach(function(p){var d=poDataCir(p),pre=false;if(!d){var x=agDataTexto(p);if(x){d=x.data;pre=x.pre&&t!=='operados';}}if(!d)return;(map[d]=map[d]||[]).push({p:p,t:t,pre:pre});});});
   var ini=new Date(y,m,1,12);ini.setDate(1-ini.getDay());
   var fim=new Date(y,m+1,0,12);fim.setDate(fim.getDate()+(6-fim.getDay()));
   var hj=today(),cells='',tot=0,wd=[0,0,0,0,0,0,0],d=new Date(ini);
@@ -653,13 +662,13 @@ function fcRenderAgenda(){
     var w=d.getDay(),fer=!!fcFeriados(d.getFullYear())[iso];
     var cls='ag-day'+(dentro?'':' out')+(w===0||w===6?' we':'')+(fer?' fer':'')+(iso===hj?' hoje':'');
     cells+='<div class="'+cls+'"><div class="ag-dn"><span>'+d.getDate()+'</span>'+(L.length?'<span class="ag-n">'+L.length+'</span>':'')+'</div>'+(fer?'<div class="ag-fer">'+agFerNome(iso)+'</div>':'')
-      +L.map(function(x){return'<div class="ag-p'+(x.t==='futuras'?' fut':x.t==='operados'?' op':'')+'" title="'+esc(x.p.nome)+' — '+esc(x.p.cirurgia||'')+' — '+esc(x.p.convenio||'')+(x.t==='futuras'?' (Futuras)':x.t==='operados'?' (Operado)':'')+'" onclick="agAbrir(\''+x.t+'\',\''+esc(x.p.id||'')+'\')">'+(x.t==='operados'?'✓ ':'')+esc(x.p.nome)+'<small>'+esc(x.p.cirurgia||'')+'</small></div>';}).join('')+'</div>';
+      +L.map(function(x){return'<div class="ag-p'+(x.t==='futuras'?' fut':x.t==='operados'?' op':'')+(x.pre?' pre':'')+'" title="'+esc(x.p.nome)+' — '+esc(x.p.cirurgia||'')+' — '+esc(x.p.convenio||'')+(x.t==='futuras'?' (Futuras)':x.t==='operados'?' (Operado)':'')+(x.pre?' — pré-agendado (data lida do lembrete)':'')+'" onclick="agAbrir(\''+x.t+'\',\''+esc(x.p.id||'')+'\')">'+(x.t==='operados'?'✓ ':'')+esc(x.p.nome)+'<small>'+(x.pre?'pré · ':'')+esc(x.p.cirurgia||'')+'</small></div>';}).join('')+'</div>';
     d.setDate(d.getDate()+1);
   }
   var nomes=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
   var hd=nomes.map(function(n,k){return'<div class="ag-wd">'+n+'<b>'+(wd[k]?wd[k]+' pac.':'&nbsp;')+'</b></div>';}).join('');
   var titulo=b.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});titulo=titulo.charAt(0).toUpperCase()+titulo.slice(1);
-  g.innerHTML='<div class="ag-wrap"><div class="ag-hd"><button class="ag-btn" onclick="agNav(-1)">◀</button><h3>'+titulo+'</h3><button class="ag-btn" onclick="agNav(1)">▶</button><button class="ag-btn" onclick="agNav(0)">Hoje</button><span class="ag-tot"><span style="color:#81BBA1">■</span> agendado &nbsp;<span style="color:#5b8def">■</span> operado &nbsp;<span style="color:#8b94a8">■</span> futuras &nbsp;·&nbsp; Cirurgias no mês: <b>'+tot+'</b></span></div>'
+  g.innerHTML='<div class="ag-wrap"><div class="ag-hd"><button class="ag-btn" onclick="agNav(-1)">◀</button><h3>'+titulo+'</h3><button class="ag-btn" onclick="agNav(1)">▶</button><button class="ag-btn" onclick="agNav(0)">Hoje</button><span class="ag-tot"><span style="color:#81BBA1">■</span> agendado (pré = data do lembrete) &nbsp;<span style="color:#5b8def">■</span> operado &nbsp;<span style="color:#8b94a8">■</span> futuras &nbsp;·&nbsp; Cirurgias no mês: <b>'+tot+'</b></span></div>'
     +'<div class="ag-wh">'+hd+'</div><div class="ag-grid">'+cells+'</div></div>';
 }
 
