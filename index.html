@@ -278,7 +278,7 @@ function initFila(){
   if(fcInited){fcLoad();return;}
   fcInited=true;
   document.getElementById('fc-body').innerHTML=FC_CSS
-  +'<div class="fc-tabs"><button class="fc-tab active" id="fct-ativas" onclick="fcSetTab(\'ativas\')">Ativas</button><button class="fc-tab" id="fct-futuras" onclick="fcSetTab(\'futuras\')">Futuras</button><button class="fc-tab" id="fct-operados" onclick="fcSetTab(\'operados\')">✅ Operados</button><button class="fc-tab" id="fct-prazos" onclick="fcSetTab(\'prazos\')">⏰ Prazos</button></div>'
+  +'<div class="fc-tabs"><button class="fc-tab active" id="fct-ativas" onclick="fcSetTab(\'ativas\')">Ativas</button><button class="fc-tab" id="fct-agenda" onclick="fcSetTab(\'agenda\')">📅 Agenda</button><button class="fc-tab" id="fct-futuras" onclick="fcSetTab(\'futuras\')">Futuras</button><button class="fc-tab" id="fct-operados" onclick="fcSetTab(\'operados\')">✅ Operados</button><button class="fc-tab" id="fct-prazos" onclick="fcSetTab(\'prazos\')">⏰ Prazos</button></div>'
   +'<div class="fc-ctrl" id="fc-ctrl"><input type="text" id="fc-search" placeholder="🔍 Buscar..." oninput="fcRender()"><select id="fc-fs" onchange="fcRender()"><option value="">Todos os status</option><option>AUTORIZADO</option><option>EM AUTORIZAÇÃO</option><option>EM COTAÇÃO DE OPME</option><option>AINDA NÃO SOLICITADO</option><option>NÃO NECESSITA</option><option>PACIENTE INDECISO</option><option>OPERADO</option></select><select id="fc-fc" onchange="fcRender()"><option value="">Todos os convênios</option>'+CONV_OPTS.map(function(v){return'<option>'+v+'</option>';}).join('')+'</select><button class="fc-btn-pend" id="fc-btn-pend" onclick="fcPendOpen()">📋 Pendências de autorização</button><button class="fc-btn-new" onclick="fcAddNew()">＋ Novo</button></div>'
   +'<div class="fc-ctrl fc-op-ctrl" id="fc-op-ctrl" style="display:none"><span class="fc-op-lbl">Ordenar</span><select id="fc-op-sort" onchange="fcRender()"><option value="">Padrão (alertas e estrelas)</option><option value="data_desc">Data da cirurgia — mais recente primeiro</option><option value="data_asc">Data da cirurgia — mais antiga primeiro</option><option value="nome_asc">Nome — A → Z</option><option value="nome_desc">Nome — Z → A</option></select><span class="fc-op-lbl">Tempo de cirurgia</span><select id="fc-op-tempo" onchange="fcRender()"><option value="">Todos</option><option value="0-30">Até 30 dias</option><option value="31-90">31 a 90 dias (1–3 meses)</option><option value="91-180">91 a 180 dias (3–6 meses)</option><option value="181-365">181 a 365 dias (6–12 meses)</option><option value="366-">Mais de 1 ano</option><option value="sem">Sem data de cirurgia</option></select><span class="fc-op-lbl">Data de</span><input type="date" id="fc-op-de" onchange="fcRender()"><span class="fc-op-lbl">até</span><input type="date" id="fc-op-ate" onchange="fcRender()"><button class="fc-op-clear" onclick="fcOpLimpar()">Limpar filtros</button><span class="fc-op-count" id="fc-op-count"></span></div>'
   +'<div id="fc-pend-modal" class="fc-pend-modal" style="display:none" onclick="if(event.target===this)fcPendClose()"><div class="fc-pend-box" id="fc-pend-box"></div></div>'
@@ -357,6 +357,30 @@ var FC_CSS='<style>'
 +'.bdg.indeciso .bdg-dot{background:#f0883e}'
 +'.bdg.cotacao-opme{background:rgba(78,201,214,.1);border-color:#4ec9d6;color:#4ec9d6}'
 +'.bdg.cotacao-opme .bdg-dot{background:#4ec9d6}'
++'.ag-wrap{grid-column:1/-1;width:100%}'
++'.ag-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}'
++'.ag-hd h3{margin:0;font-size:20px;color:#e6ebf5;min-width:190px}'
++'.ag-btn{background:#1e2535;border:1px solid #2a3347;color:#c9d1e0;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}'
++'.ag-btn:hover{border-color:#5B9776;color:#81BBA1}'
++'.ag-tot{margin-left:auto;font-size:12px;color:#8b94a8}'
++'.ag-tot b{color:#81BBA1;font-family:DM Mono,monospace}'
++'.ag-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;height:calc(100vh - 230px);min-height:560px;grid-auto-rows:1fr}'
++'.ag-wh{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin-bottom:4px}'
++'.ag-wd{text-align:center;font-size:12px;color:#8b94a8;text-transform:uppercase;letter-spacing:.5px;padding:4px 0;height:auto}'
++'.ag-wd b{display:block;font-size:11px;color:#81BBA1;font-family:DM Mono,monospace;text-transform:none}'
++'.ag-day{background:#161c28;border:1px solid #2a3347;border-radius:8px;padding:5px 6px;overflow:auto;display:flex;flex-direction:column;gap:3px;min-height:0}'
++'.ag-day.out{opacity:.35}'
++'.ag-day.we{background:#12161f}'
++'.ag-day.fer{background:#1f1a14;border-color:#5a4a2a}'
++'.ag-day.hoje{border:2px solid #81BBA1}'
++'.ag-dn{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#c9d1e0;font-family:DM Mono,monospace}'
++'.ag-dn .ag-n{background:#5B9776;color:#fff;border-radius:10px;padding:0 7px;font-size:11px;font-weight:700}'
++'.ag-fer{font-size:10px;color:#e8b84b}'
++'.ag-p{background:rgba(73,103,80,.22);border-left:3px solid #81BBA1;border-radius:4px;padding:2px 5px;font-size:12px;color:#e6ebf5;cursor:pointer;line-height:1.2}'
++'.ag-p:hover{background:rgba(73,103,80,.4)}'
++'.ag-p small{display:block;color:#8b94a8;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
++'.ag-p.fut{border-left-color:#8b94a8;background:rgba(139,148,168,.12)}'
++'@media(max-width:700px){.ag-grid{height:auto;grid-auto-rows:minmax(90px,auto)}.ag-p{font-size:10px}.ag-p small{display:none}.ag-hd h3{font-size:16px;min-width:0}}'
 +'.bdg-dias{margin-left:5px;padding-left:5px;border-left:1px solid currentColor;font-family:DM Mono,monospace;font-weight:700}'
 +'.fc-hist{margin-top:12px;border:1px solid #2a3347;border-radius:9px;overflow:hidden}'
 +'.fc-hist table{width:100%;border-collapse:collapse;font-size:12px}'
@@ -457,7 +481,7 @@ var FC_CSS='<style>'
 
 function fcGetPrazos(){return[].concat(DB.ativas,DB.futuras).filter(function(p){return p.deadline;}).map(function(p){return{p:p,days:daysTo(p.deadline)};}).filter(function(x){return x.days!==null;}).sort(function(a,b){return a.days-b.days;});}
 function fcBadges(){var items=fcGetPrazos(),exp=items.filter(function(x){return x.days<0;}).length+pzVencidos().length,soon=items.filter(function(x){return x.days>=0&&x.days<=7;}).length+pzProximos24h().length;var el=document.getElementById('fct-prazos');if(!el)return;el.querySelectorAll('.ab').forEach(function(e){e.remove();});el.classList.toggle('pz-alert',pzVencidos().length>0);if(exp>0)el.insertAdjacentHTML('beforeend','<span class="ab">'+exp+'</span>');else if(soon>0)el.insertAdjacentHTML('beforeend','<span class="ab warn">'+soon+'</span>');}
-function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','futuras','operados','prazos'].forEach(function(id){var el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});var c=document.getElementById('fc-ctrl');if(c)c.style.display=t==='prazos'?'none':'flex';fcCtrlVis();fcRender();}
+function fcSetTab(t){fcTab=t;if(t!=='prazos'){fcOpen.clear();fcEdit.clear();}['ativas','agenda','futuras','operados','prazos'].forEach(function(id){var el=document.getElementById('fct-'+id);if(el)el.classList.toggle('active',id===t);});var c=document.getElementById('fc-ctrl');if(c)c.style.display=(t==='prazos'||t==='agenda')?'none':'flex';fcCtrlVis();fcRender();}
 function fcStars(i,s){return[1,2,3,4,5].map(function(n){return'<span class="star" style="color:'+(n<=s?'#e8b84b':'#3a4a63')+'" onclick="fcSetStar(event,'+i+','+n+')">'+(n<=s?'★':'☆')+'</span>';}).join('');}
 function fcSetStar(e,i,n){e.stopPropagation();var c=DB[fcTab][i].stars||0;DB[fcTab][i].stars=c===n?0:n;fcSave(DB[fcTab][i]);fcRender();}
 
@@ -566,6 +590,7 @@ function fcEditBody(p,i){
 function fcRender(){
   fcBadges();fcCtrlVis();fcDupBanner();
   if(fcTab==='prazos'){fcRenderPrazos();return;}
+  if(fcTab==='agenda'){fcRenderAgenda();return;}
   var q=((document.getElementById('fc-search')||{value:''}).value).toLowerCase();
   var fs=((document.getElementById('fc-fs')||{value:''}).value).toUpperCase();
   var fc=((document.getElementById('fc-fc')||{value:''}).value).toUpperCase();
@@ -604,6 +629,37 @@ function fcRender(){
     +'<div class="fbody">'+(isEdit?fcEditBody(p,i):fcViewBody(p,i))+'</div>'
     +'</div>';
   }).join('');
+}
+
+// ── Aba Agenda: calendário do mês com os pacientes que já têm data prevista da cirurgia (Ativas e Futuras) ──
+var agMes=null;
+function agBase(){if(!agMes){var d=new Date();agMes=new Date(d.getFullYear(),d.getMonth(),1,12);}return agMes;}
+function agNav(n){var b=agBase();if(n===0){var d=new Date();agMes=new Date(d.getFullYear(),d.getMonth(),1,12);}else agMes=new Date(b.getFullYear(),b.getMonth()+n,1,12);fcRenderAgenda();}
+function agAbrir(t,id){var i=-1;DB[t].forEach(function(p,k){if((p.id||'')===id&&i<0)i=k;});if(i<0)return;fcSetTab(t);fcOpen.clear();fcEdit.clear();fcOpen.add(i);fcRender();setTimeout(function(){var el=document.getElementById('fc-card-'+i);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},60);}
+function agFerNome(iso){var md=iso.slice(5),N={'01-01':'Confraternização','04-21':'Tiradentes','05-01':'Dia do Trabalho','09-07':'Independência','10-12':'N. Sra. Aparecida','11-02':'Finados','11-15':'Proclamação da República','11-20':'Consciência Negra','12-25':'Natal'};return N[md]||'Sexta-feira Santa';}
+function fcRenderAgenda(){
+  var g=document.getElementById('fc-grid');if(!g)return;
+  var sc=document.getElementById('fc-stats');if(sc)sc.innerHTML='';
+  var b=agBase(),y=b.getFullYear(),m=b.getMonth();
+  var map={};
+  ['ativas','futuras'].forEach(function(t){DB[t].forEach(function(p){if(sCls(p.status)==='operado')return;var d=poDataCir(p);if(!d)return;(map[d]=map[d]||[]).push({p:p,t:t});});});
+  var ini=new Date(y,m,1,12);ini.setDate(1-ini.getDay());
+  var fim=new Date(y,m+1,0,12);fim.setDate(fim.getDate()+(6-fim.getDay()));
+  var hj=today(),cells='',tot=0,wd=[0,0,0,0,0,0,0],d=new Date(ini);
+  while(d<=fim){
+    var iso=dIso(d),dentro=d.getMonth()===m,L=(map[iso]||[]).slice().sort(function(a,c){return(a.p.nome||'').localeCompare(c.p.nome||'');});
+    if(dentro){tot+=L.length;wd[d.getDay()]+=L.length;}
+    var w=d.getDay(),fer=!!fcFeriados(d.getFullYear())[iso];
+    var cls='ag-day'+(dentro?'':' out')+(w===0||w===6?' we':'')+(fer?' fer':'')+(iso===hj?' hoje':'');
+    cells+='<div class="'+cls+'"><div class="ag-dn"><span>'+d.getDate()+'</span>'+(L.length?'<span class="ag-n">'+L.length+'</span>':'')+'</div>'+(fer?'<div class="ag-fer">'+agFerNome(iso)+'</div>':'')
+      +L.map(function(x){return'<div class="ag-p'+(x.t==='futuras'?' fut':'')+'" title="'+esc(x.p.nome)+' — '+esc(x.p.cirurgia||'')+' — '+esc(x.p.convenio||'')+(x.t==='futuras'?' (Futuras)':'')+'" onclick="agAbrir(\''+x.t+'\',\''+esc(x.p.id||'')+'\')">'+esc(x.p.nome)+'<small>'+esc(x.p.cirurgia||'')+'</small></div>';}).join('')+'</div>';
+    d.setDate(d.getDate()+1);
+  }
+  var nomes=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  var hd=nomes.map(function(n,k){return'<div class="ag-wd">'+n+'<b>'+(wd[k]?wd[k]+' pac.':'&nbsp;')+'</b></div>';}).join('');
+  var titulo=b.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});titulo=titulo.charAt(0).toUpperCase()+titulo.slice(1);
+  g.innerHTML='<div class="ag-wrap"><div class="ag-hd"><button class="ag-btn" onclick="agNav(-1)">◀</button><h3>'+titulo+'</h3><button class="ag-btn" onclick="agNav(1)">▶</button><button class="ag-btn" onclick="agNav(0)">Hoje</button><span class="ag-tot">Cirurgias agendadas no mês: <b>'+tot+'</b></span></div>'
+    +'<div class="ag-wh">'+hd+'</div><div class="ag-grid">'+cells+'</div></div>';
 }
 
 // ── Filtros da aba Operados ──
